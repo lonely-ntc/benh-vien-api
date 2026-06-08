@@ -79,7 +79,7 @@ const DANH_MUC = {
  * GET /api/danhMuc
  * Trả về tất cả danh mục
  */
-router.get('/', (req, res) => {
+router.get('/', (_req, res) => {
   res.json({ success: true, data: DANH_MUC });
 });
 

@@ -3,15 +3,12 @@ services:
     name: benh-vien-api
     env: node
     plan: free
-    rootDir: .
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node src/index.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        generateValue: true       # Render tự sinh secret ngẫu nhiên
+        generateValue: true
       - key: JWT_EXPIRES_IN
         value: 8h
-      # FIREBASE_CREDENTIALS sẽ thêm thủ công trong Render Dashboard
-      # (dán nội dung service-account.json vào đây)
