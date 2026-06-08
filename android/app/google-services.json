@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "523495731073",
+    "project_id": "thongtinbenhnhan-8ab9b",
+    "storage_bucket": "thongtinbenhnhan-8ab9b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:523495731073:android:cb58d9ce193a8072b7c280",
+        "android_client_info": {
+          "package_name": "com.example.app_benhvien_token"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAo3osclBsS5FF-tb3vp8tz5vxiSO2rzuo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

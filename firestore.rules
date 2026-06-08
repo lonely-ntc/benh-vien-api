@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Bệnh nhân
+    match /benhNhan/{docId} {
+      allow read, write: if true;
+    }
+
+    // Bệnh truyền nhiễm
+    match /benhTruyenNhiem/{docId} {
+      allow read, write: if true;
+    }
+
+    // Tài khoản người dùng do admin tạo
+    match /taiKhoan/{docId} {
+      allow read, write: if true;
+    }
+
+    // Cấu hình admin
+    match /adminConfig/{docId} {
+      allow read, write: if true;
+    }
+
+  }
+}
