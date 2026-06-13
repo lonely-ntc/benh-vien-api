@@ -9,6 +9,40 @@ const router = Router();
 router.use(requireAuth);
 
 /**
+ * POST /api/benhNhan/push
+ * Body: { ...benhNhanData }
+ * Lưu hoặc cập nhật một bệnh nhân từ app mobile
+ */
+router.post('/push', async (req, res) => {
+  try {
+    const data = req.body || {};
+    const id = data.id;
+
+    // Xóa field id khỏi data trước khi lưu
+    const { id: _id, ...saveData } = data;
+    saveData.ngayCapNhat = new Date().toISOString();
+
+    if (id) {
+      // Kiểm tra đã tồn tại chưa
+      const existing = await db.collection('benhNhan').doc(id).get();
+      if (existing.exists) {
+        await db.collection('benhNhan').doc(id).update(saveData);
+        return res.json({ success: true, message: 'Đã cập nhật bệnh nhân.', id });
+      }
+    }
+
+    // Tạo mới
+    const docRef = await db.collection('benhNhan').add({
+      ...saveData,
+      ngayDangKy: saveData.ngayDangKy || new Date().toISOString(),
+    });
+    res.status(201).json({ success: true, message: 'Đã thêm bệnh nhân mới.', id: docRef.id });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+/**
  * GET /api/benhNhan
  * Query: pageSize=50, startAfter=<docId>
  */
