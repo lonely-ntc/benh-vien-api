@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/benh_nhan.dart';
 import '../services/firestore_service.dart';
 import 'chi_tiet_benh_nhan_screen.dart';
@@ -301,9 +300,6 @@ class _BenhNhanCard extends StatelessWidget {
                       _InfoRow(icon: Icons.credit_card_outlined, text: 'CCCD: ${bn.cccd!}'),
                     if (bn.phongKham != null)
                       _InfoRow(icon: Icons.door_front_door_outlined, text: bn.phongKham!),
-                    // ── Dòng ID ──
-                    const SizedBox(height: 4),
-                    _IdRow(id: bn.id),
                   ],
                 ),
               ),
@@ -378,54 +374,3 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-// ── ID row với nút copy nhanh ────────────────────────────────────────────────
-class _IdRow extends StatelessWidget {
-  final String id;
-  const _IdRow({required this.id});
-
-  // Rút gọn ID: 6 ký tự đầu + ... + 4 ký tự cuối
-  String get _short =>
-      id.length > 12 ? '${id.substring(0, 6)}…${id.substring(id.length - 4)}' : id;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Clipboard.setData(ClipboardData(text: id));
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Đã copy ID bệnh nhân'),
-          duration: Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-        ));
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1565C0).withAlpha(12),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-              color: const Color(0xFF1565C0).withAlpha(40), width: 0.8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.fingerprint,
-                size: 12, color: Colors.grey.shade500),
-            const SizedBox(width: 4),
-            Text(
-              'ID: $_short',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade600,
-                fontFamily: 'monospace',
-                letterSpacing: 0.3,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(Icons.copy, size: 10, color: Colors.grey.shade400),
-          ],
-        ),
-      ),
-    );
-  }
-}

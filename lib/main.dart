@@ -6,6 +6,7 @@ import 'screens/dang_nhap_screen.dart';
 import 'screens/danh_sach_benh_nhan_screen.dart';
 import 'screens/benh_truyen_nhiem/danh_sach_btn_screen.dart';
 import 'screens/quan_ly_tai_khoan_screen.dart';
+import 'screens/day_du_lieu_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _screens = const [
     DanhSachBenhNhanScreen(),
     DanhSachBTNScreen(),
+    DayDuLieuScreen(),
     QuanLyTaiKhoanScreen(),
   ];
 
@@ -87,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (i) {
-          if (i == 3) {
+          if (i == 4) {
             _dangXuat();
           } else {
             setState(() => _tab = i);
@@ -105,6 +107,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.coronavirus_outlined),
             selectedIcon: Icon(Icons.coronavirus, color: Color(0xFF2E7D32)),
             label: 'Bệnh TN',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.upload_outlined),
+            selectedIcon: Icon(Icons.upload_rounded, color: Color(0xFF1565C0)),
+            label: 'Đẩy dữ liệu',
           ),
           NavigationDestination(
             icon: Icon(Icons.manage_accounts_outlined),

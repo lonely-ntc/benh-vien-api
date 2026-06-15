@@ -251,10 +251,6 @@ class _ChiTietView extends StatelessWidget {
                 _T('49. SĐT người báo cáo', b.sdtNguoiBaoCao, Icons.phone_outlined, copy: true),
                 _T('50. Email người báo cáo', b.emailNguoiBaoCao, Icons.email_outlined),
               ]),
-              const SizedBox(height: 16),
-
-              // ID doc
-              _DocIdRow(id: b.id),
               const SizedBox(height: 28),
             ]),
           ),
@@ -339,28 +335,3 @@ class _TileW extends StatelessWidget {
   }
 }
 
-class _DocIdRow extends StatelessWidget {
-  final String id;
-  const _DocIdRow({required this.id});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.shade300)),
-      child: Row(children: [
-        Icon(Icons.fingerprint, size: 16, color: Colors.grey.shade500),
-        const SizedBox(width: 8),
-        Text('ID: ', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-        Expanded(child: Text(id, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontFamily: 'monospace'), overflow: TextOverflow.ellipsis)),
-        IconButton(
-          icon: Icon(Icons.copy, size: 16, color: Colors.grey.shade500),
-          constraints: const BoxConstraints(), padding: EdgeInsets.zero,
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: id));
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã copy ID'), duration: Duration(seconds: 1)));
-          },
-        ),
-      ]),
-    );
-  }
-}

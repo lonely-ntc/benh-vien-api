@@ -40,6 +40,9 @@ dependencies:
   # Bảo mật
   crypto: ^3.0.7
 
+  # HTTP client cho API
+  http: ^1.2.2
+
   # UI helpers
   intl: ^0.20.2
 

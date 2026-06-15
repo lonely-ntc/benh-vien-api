@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../models/benh_truyen_nhiem.dart';
 import '../../services/benh_truyen_nhiem_service.dart';
 import 'them_btn_screen.dart';
@@ -191,34 +190,6 @@ class _BtnCard extends StatelessWidget {
                 if (b.ngayKhoiPhat != null)
                   _Row(Icons.calendar_today_outlined, 'Khởi phát: ${b.ngayKhoiPhat!}'),
                 const SizedBox(height: 4),
-                // ── ID chip ──
-                GestureDetector(
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: b.id));
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Đã copy ID'), duration: Duration(seconds: 1),
-                      behavior: SnackBarBehavior.floating,
-                    ));
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32).withAlpha(12),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFF2E7D32).withAlpha(40), width: 0.8),
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.fingerprint, size: 12, color: Colors.grey.shade500),
-                      const SizedBox(width: 4),
-                      Text(
-                        'ID: ${b.id.length > 12 ? '${b.id.substring(0, 6)}…${b.id.substring(b.id.length - 4)}' : b.id}',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontFamily: 'monospace'),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.copy, size: 10, color: Colors.grey.shade400),
-                    ]),
-                  ),
-                ),
               ]),
             ),
 
