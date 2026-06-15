@@ -8,6 +8,35 @@ const router = Router();
 router.use(requireAuth);
 
 /**
+ * POST /api/benhTruyenNhiem/push
+ * Lưu hoặc cập nhật một ca bệnh truyền nhiễm từ app mobile
+ */
+router.post('/push', async (req, res) => {
+  try {
+    const data = req.body || {};
+    const id = data.id;
+    const { id: _id, ...saveData } = data;
+    saveData.ngayCapNhat = new Date().toISOString();
+
+    if (id) {
+      const existing = await db.collection('benhTruyenNhiem').doc(id).get();
+      if (existing.exists) {
+        await db.collection('benhTruyenNhiem').doc(id).update(saveData);
+        return res.json({ success: true, message: 'Đã cập nhật ca bệnh.', id });
+      }
+    }
+
+    const docRef = await db.collection('benhTruyenNhiem').add({
+      ...saveData,
+      ngayTao: saveData.ngayTao || new Date().toISOString(),
+    });
+    res.status(201).json({ success: true, message: 'Đã thêm ca bệnh mới.', id: docRef.id });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+/**
  * GET /api/benhTruyenNhiem
  * Query: pageSize=50, startAfter=<docId>, chanDoanBenh=<string>, ketQuaXN=<string>
  */
