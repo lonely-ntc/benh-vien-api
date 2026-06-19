@@ -6,6 +6,7 @@ import '../models/benh_truyen_nhiem.dart';
 import '../services/firestore_service.dart';
 import '../services/benh_truyen_nhiem_service.dart';
 import '../services/api_push_service.dart';
+import 'lay_api_token_screen.dart';
 
 class DayDuLieuScreen extends StatefulWidget {
   const DayDuLieuScreen({super.key});
@@ -31,12 +32,14 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
   bool _pushingBN             = false;
   List<PushKetQua> _ketQuaBN  = [];
   bool _hienKetQuaBN          = false;
+  List<BenhNhan> _cachedBenhNhan = []; // cache để truyền sang LayApiTokenScreen
 
   // ── Bệnh truyền nhiễm ────────────────────────────────────────────────────
   final Set<String> _selBTN   = {};
   bool _pushingBTN            = false;
   List<PushKetQua> _ketQuaBTN = [];
   bool _hienKetQuaBTN         = false;
+  List<BenhTruyenNhiem> _cachedBTN = []; // cache để truyền sang LayApiTokenScreen
 
   @override
   void initState() {
@@ -110,6 +113,7 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
       context,
       title: 'Payload bệnh truyền nhiễm (${items.length} ca)',
       payloads: items.map((e) => e.toApiPayload()).toList(),
+      readableList: items.map((e) => _btnToReadable(e)).toList(),
       token: _token,
     );
   }
@@ -120,15 +124,75 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
     _hienDialogPayload(
       context,
       title: 'Payload bệnh nhân (${items.length} người)',
-      payloads: items.map((e) => {'id': e.id, ...e.toFirestore()}).toList(),
+      payloads: items.map((e) => e.toApiPayload()).toList(),
+      readableList: items.map((e) => _bnToReadable(e)).toList(),
       token: _token,
     );
   }
+
+  /// Tạo map dễ đọc cho BTN — hiển thị cả id lẫn tên
+  static Map<String, String?> _btnToReadable(BenhTruyenNhiem e) => {
+    'Họ tên':           e.hoTen,
+    'Ngày sinh':        e.ngaySinh,
+    'Giới tính':        e.gioiTinhItem != null ? '${e.gioiTinhItem!.id} – ${e.gioiTinhItem!.name}' : null,
+    'Dân tộc':          e.danTocItem != null ? '${e.danTocItem!.id} – ${e.danTocItem!.name}' : null,
+    'CCCD/CMND':        e.maDinhDanhCaNhan,
+    'Người bảo hộ':     e.tenNguoiBaoHo,
+    'SĐT':              e.sdt,
+    'Có thai':          e.coThaiItem != null ? '${e.coThaiItem!.id} – ${e.coThaiItem!.name}' : null,
+    'Nghề nghiệp':      e.ngheNghiep,
+    'Nơi ở hiện nay':   e.noiOHienNay,
+    'Tỉnh nơi ở':       e.cityIdItem != null ? '${e.cityIdItem!.id} – ${e.cityIdItem!.name}' : null,
+    'Tỉnh nơi làm/học': e.cityIdHocItem != null ? '${e.cityIdHocItem!.id} – ${e.cityIdHocItem!.name}' : null,
+    'Cơ sở điều trị':   e.coSoDieuTriItem != null ? '${e.coSoDieuTriItem!.id} – ${e.coSoDieuTriItem!.name}' : null,
+    'Tỉnh CSDT':        e.cityIdCSDTItem != null ? '${e.cityIdCSDTItem!.id} – ${e.cityIdCSDTItem!.name}' : null,
+    'Hình thức ĐT':     e.hinhThucDieuTriItem != null ? '${e.hinhThucDieuTriItem!.id} – ${e.hinhThucDieuTriItem!.name}' : null,
+    'Chẩn đoán bệnh':   e.chanDoanBenhItem != null ? '${e.chanDoanBenhItem!.id} – ${e.chanDoanBenhItem!.name}' : null,
+    'Phân độ bệnh':     e.phanDoBenhItem != null ? '${e.phanDoBenhItem!.id} – ${e.phanDoBenhItem!.name}' : null,
+    'Thông tin ĐT':     e.thongTinDieuTriItem?.name,
+    'Bệnh nền':         e.benhNenKemTheoItem != null ? '${e.benhNenKemTheoItem!.id} – ${e.benhNenKemTheoItem!.name}' : null,
+    'Phân loại CĐ':     e.phanLoaiChanDoanItem != null ? '${e.phanLoaiChanDoanItem!.id} – ${e.phanLoaiChanDoanItem!.name}' : null,
+    'Lấy mẫu XN':       e.layMauXNItem?.name,
+    'Loại bệnh phẩm':   e.loaiBenhPhamItem != null ? '${e.loaiBenhPhamItem!.id} – ${e.loaiBenhPhamItem!.name}' : null,
+    'Loại XN':          e.loaiXNItem != null ? '${e.loaiXNItem!.id} – ${e.loaiXNItem!.name}' : null,
+    'Kết quả XN':       e.ketQuaXNItem != null ? '${e.ketQuaXNItem!.id} – ${e.ketQuaXNItem!.name}' : null,
+    'Tình trạng tiêm':  e.tinhTrangTiemItem != null ? '${e.tinhTrangTiemItem!.id} – ${e.tinhTrangTiemItem!.name}' : null,
+    'Ngày khởi phát':   e.ngayKhoiPhat,
+    'Ngày nhập viện':   e.ngayNhapVien,
+    'Ngày XV/TV/CV':    e.ngayXVTVCV,
+    'Người báo cáo':    e.nguoiBaoCao,
+    'SĐT báo cáo':      e.sdtNguoiBaoCao,
+    'Ngày báo cáo':     e.ngayBaoCao,
+  };
+
+  /// Tạo map dễ đọc cho BenhNhan
+  static Map<String, String?> _bnToReadable(BenhNhan e) => {
+    'Họ tên':           e.hoTen,
+    'Ngày sinh':        e.ngaySinh,
+    'Giới tính':        e.gioiTinhItem != null ? '${e.gioiTinhItem!.id} – ${e.gioiTinhItem!.name}' : null,
+    'Dân tộc':          e.danTocItem != null ? '${e.danTocItem!.id} – ${e.danTocItem!.name}' : null,
+    'CCCD/CMND':        e.cccd,
+    'SĐT':              e.soDienThoai,
+    'Bảo hiểm YT':      e.baoHiemYTe,
+    'Địa chỉ':          e.diaChi,
+    'Tỉnh':             e.tinhItem != null ? '${e.tinhItem!.id} – ${e.tinhItem!.name}' : null,
+    'Bệnh nền':         e.benhNenItem != null ? '${e.benhNenItem!.id} – ${e.benhNenItem!.name}' : null,
+    'Bệnh TN':          e.benhTruyenNhiemItem != null ? '${e.benhTruyenNhiemItem!.id} – ${e.benhTruyenNhiemItem!.name}' : null,
+    'Tiêm chủng':       e.tinhTrangTiemChungItem != null ? '${e.tinhTrangTiemChungItem!.id} – ${e.tinhTrangTiemChungItem!.name}' : null,
+    'Chẩn đoán':        e.chanDoanBenhItem != null ? '${e.chanDoanBenhItem!.id} – ${e.chanDoanBenhItem!.name}' : null,
+    'Hình thức ĐT':     e.hinhThucDieuTriItem != null ? '${e.hinhThucDieuTriItem!.id} – ${e.hinhThucDieuTriItem!.name}' : null,
+    'Phân loại CĐ':     e.phanLoaiChanDoanItem != null ? '${e.phanLoaiChanDoanItem!.id} – ${e.phanLoaiChanDoanItem!.name}' : null,
+    'Loại bệnh phẩm':   e.loaiBenhPhamItem != null ? '${e.loaiBenhPhamItem!.id} – ${e.loaiBenhPhamItem!.name}' : null,
+    'Kết quả XN':       e.ketQuaXetNghiemItem != null ? '${e.ketQuaXetNghiemItem!.id} – ${e.ketQuaXetNghiemItem!.name}' : null,
+    'Cơ sở báo cáo':    e.coSoBaoCaoItem != null ? '${e.coSoBaoCaoItem!.id} – ${e.coSoBaoCaoItem!.name}' : null,
+    'Cơ sở điều trị':   e.coSoDieuTriItem != null ? '${e.coSoDieuTriItem!.id} – ${e.coSoDieuTriItem!.name}' : null,
+  };
 
   static void _hienDialogPayload(
     BuildContext context, {
     required String title,
     required List<Map<String, dynamic>> payloads,
+    List<Map<String, String?>>? readableList,
     String? token,
   }) {
     // Làm sạch map để serialize được
@@ -139,7 +203,7 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
         if (v is String || v is int || v is double || v is bool) return MapEntry(e.key, v);
         if (v is Map) return MapEntry(e.key, clean(v.cast<String, dynamic>()));
         if (v is List) return MapEntry(e.key, v.map((i) => i is Map ? clean(i.cast<String, dynamic>()) : i).toList());
-        return MapEntry(e.key, v.toString()); // Timestamp, FieldValue...
+        return MapEntry(e.key, v.toString());
       }));
     }
 
@@ -153,6 +217,7 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
       builder: (_) => _PayloadDialog(
         title: title,
         jsonText: jsonText,
+        readableList: readableList,
         token: token,
       ),
     );
@@ -171,6 +236,29 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
           SizedBox(width: 8),
           Text('Đẩy dữ liệu lên API', style: TextStyle(fontWeight: FontWeight.bold)),
         ]),
+        actions: [
+          // Nút mở màn hình API Token với dữ liệu đang chọn
+          IconButton(
+            icon: const Icon(Icons.token, size: 22),
+            tooltip: 'Xem API Token & Requests',
+            onPressed: () {
+              // Lấy danh sách đã chọn từ state hiện tại
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LayApiTokenScreen(
+                    selectedBenhNhan: _cachedBenhNhan
+                        .where((e) => _selBN.contains(e.id))
+                        .toList(),
+                    selectedBTN: _cachedBTN
+                        .where((e) => _selBTN.contains(e.id))
+                        .toList(),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabCtrl,
           indicatorColor: Colors.white,
@@ -208,6 +296,13 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
                   if (_selBN.length == ds.length) { _selBN.clear(); }
                   else { _selBN.addAll(ds.map((e) => e.id)); }
                 }),
+                onDataLoaded: (ds) {
+                  if (_cachedBenhNhan.length != ds.length) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) setState(() => _cachedBenhNhan = ds);
+                    });
+                  }
+                },
               ),
               _TabBTN(
                 token: _token,
@@ -225,6 +320,13 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
                   if (_selBTN.length == ds.length) { _selBTN.clear(); }
                   else { _selBTN.addAll(ds.map((e) => e.id)); }
                 }),
+                onDataLoaded: (ds) {
+                  if (_cachedBTN.length != ds.length) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) setState(() => _cachedBTN = ds);
+                    });
+                  }
+                },
               ),
             ],
           ),
@@ -351,12 +453,14 @@ class _TabBenhNhan extends StatelessWidget {
   final void Function(List<BenhNhan>) onXemPayload;
   final void Function(String) onToggle;
   final void Function(List<BenhNhan>) onChonTatCa;
+  final void Function(List<BenhNhan>) onDataLoaded;
 
   const _TabBenhNhan({
     required this.token, required this.selected, required this.pushing,
     required this.ketQua, required this.hienKetQua, required this.onDay,
     required this.onXemPayload,
     required this.onToggle, required this.onChonTatCa,
+    required this.onDataLoaded,
   });
 
   @override
@@ -365,6 +469,7 @@ class _TabBenhNhan extends StatelessWidget {
       stream: FirestoreService().streamDanhSachBenhNhan(),
       builder: (_, snap) {
         final ds = snap.data ?? [];
+        if (ds.isNotEmpty) onDataLoaded(ds);
         return _buildBody(context, ds);
       },
     );
@@ -460,12 +565,14 @@ class _TabBTN extends StatelessWidget {
   final void Function(List<BenhTruyenNhiem>) onXemPayload;
   final void Function(String) onToggle;
   final void Function(List<BenhTruyenNhiem>) onChonTatCa;
+  final void Function(List<BenhTruyenNhiem>) onDataLoaded;
 
   const _TabBTN({
     required this.token, required this.selected, required this.pushing,
     required this.ketQua, required this.hienKetQua, required this.onDay,
     required this.onXemPayload,
     required this.onToggle, required this.onChonTatCa,
+    required this.onDataLoaded,
   });
 
   @override
@@ -474,6 +581,7 @@ class _TabBTN extends StatelessWidget {
       stream: BenhTruyenNhiemService().streamDanhSach(),
       builder: (_, snap) {
         final ds = snap.data ?? [];
+        if (ds.isNotEmpty) onDataLoaded(ds);
         return _buildBody(context, ds);
       },
     );
@@ -680,10 +788,12 @@ class _ItemCard extends StatelessWidget {
 class _PayloadDialog extends StatefulWidget {
   final String title;
   final String jsonText;
+  final List<Map<String, String?>>? readableList;
   final String? token;
   const _PayloadDialog({
     required this.title,
     required this.jsonText,
+    this.readableList,
     this.token,
   });
   @override
@@ -695,10 +805,17 @@ class _PayloadDialogState extends State<_PayloadDialog>
   late final TabController _tab;
   bool _tokenVisible = false;
 
+  int get _tabCount {
+    int n = 1; // JSON
+    if (widget.readableList != null) n++; // Dễ đọc
+    if (widget.token != null) n++; // Token
+    return n;
+  }
+
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: widget.token != null ? 2 : 1, vsync: this);
+    _tab = TabController(length: _tabCount, vsync: this);
   }
 
   @override
@@ -722,7 +839,18 @@ class _PayloadDialogState extends State<_PayloadDialog>
 
   @override
   Widget build(BuildContext context) {
-    final hasToken = widget.token != null;
+    // Xây danh sách tabs động
+    final tabs = <Tab>[
+      const Tab(text: 'JSON Payload'),
+      if (widget.readableList != null) const Tab(text: 'Dễ đọc'),
+      if (widget.token != null) const Tab(text: 'JWT Token'),
+    ];
+    final views = <Widget>[
+      _jsonTab(),
+      if (widget.readableList != null) _readableTab(),
+      if (widget.token != null) _tokenTab(),
+    ];
+
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -750,32 +878,20 @@ class _PayloadDialogState extends State<_PayloadDialog>
                 ),
               ]),
             ),
-            if (hasToken)
-              TabBar(
-                controller: _tab,
-                indicatorColor: Colors.white,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white60,
-                tabs: const [
-                  Tab(text: 'JSON Payload'),
-                  Tab(text: 'JWT Token'),
-                ],
-              ),
+            TabBar(
+              controller: _tab,
+              indicatorColor: Colors.white,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white60,
+              tabs: tabs,
+            ),
           ]),
         ),
 
         // ── Content ─────────────────────────────────────────────────────────
         SizedBox(
-          height: MediaQuery.of(context).size.height * 0.55,
-          child: hasToken
-              ? TabBarView(
-                  controller: _tab,
-                  children: [
-                    _jsonTab(),
-                    _tokenTab(),
-                  ],
-                )
-              : _jsonTab(),
+          height: MediaQuery.of(context).size.height * 0.58,
+          child: TabBarView(controller: _tab, children: views),
         ),
       ]),
     );
@@ -783,17 +899,14 @@ class _PayloadDialogState extends State<_PayloadDialog>
 
   // ── Tab JSON Payload ────────────────────────────────────────────────────────
   Widget _jsonTab() => Column(children: [
-    // Toolbar
     Container(
       color: const Color(0xFFF5F7FF),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(children: [
         Icon(Icons.code, size: 14, color: Colors.grey.shade600),
         const SizedBox(width: 6),
-        Expanded(child: Text(
-          '${widget.jsonText.length} ký tự',
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-        )),
+        Expanded(child: Text('${widget.jsonText.length} ký tự',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600))),
         TextButton.icon(
           onPressed: () => _copy(widget.jsonText, 'JSON'),
           icon: const Icon(Icons.copy, size: 14),
@@ -807,7 +920,6 @@ class _PayloadDialogState extends State<_PayloadDialog>
       ]),
     ),
     const Divider(height: 1),
-    // JSON text
     Expanded(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
@@ -823,6 +935,104 @@ class _PayloadDialogState extends State<_PayloadDialog>
       ),
     ),
   ]);
+
+  // ── Tab Dễ đọc — hiển thị id + tên ─────────────────────────────────────────
+  Widget _readableTab() {
+    final list = widget.readableList!;
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: list.length,
+      itemBuilder: (_, idx) {
+        final map = list[idx];
+        // Lọc các entry có giá trị
+        final entries = map.entries
+            .where((e) => e.value != null && e.value!.isNotEmpty)
+            .toList();
+        if (entries.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [BoxShadow(
+                color: Colors.black.withAlpha(8), blurRadius: 4, offset: const Offset(0, 1))],
+          ),
+          child: Column(children: [
+            // Header với tên bệnh nhân
+            if (map['Họ tên'] != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1565C0).withAlpha(12),
+                  borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(10), topRight: Radius.circular(10)),
+                ),
+                child: Row(children: [
+                  const Icon(Icons.person, size: 16, color: Color(0xFF1565C0)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(map['Họ tên']!,
+                      style: const TextStyle(fontWeight: FontWeight.bold,
+                          fontSize: 13, color: Color(0xFF1565C0)))),
+                  // Copy tất cả
+                  GestureDetector(
+                    onTap: () {
+                      final buf = StringBuffer();
+                      for (final e in entries) {
+                        buf.writeln('${e.key}: ${e.value}');
+                      }
+                      _copy(buf.toString(), 'thông tin bệnh nhân');
+                    },
+                    child: Icon(Icons.copy_all, size: 16, color: Colors.grey.shade500),
+                  ),
+                ]),
+              ),
+            // Các field
+            ...entries.where((e) => e.key != 'Họ tên').map((e) => _readableRow(e.key, e.value!)),
+          ]),
+        );
+      },
+    );
+  }
+
+  Widget _readableRow(String label, String value) {
+    // Tô màu id phần đầu (trước " – ")
+    final hasId = value.contains(' – ');
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
+          width: 110,
+          child: Text(label,
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500)),
+        ),
+        Expanded(
+          child: hasId
+              ? RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: value.split(' – ').first,
+                        style: const TextStyle(
+                            fontFamily: 'monospace', fontSize: 12,
+                            color: Color(0xFF0D47A1), fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(
+                        text: ' – ${value.split(' – ').skip(1).join(' – ')}',
+                        style: const TextStyle(
+                            fontSize: 12, color: Color(0xFF1B5E20)),
+                      ),
+                    ],
+                  ),
+                )
+              : Text(value,
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF1B5E20))),
+        ),
+      ]),
+    );
+  }
 
   // ── Tab JWT Token ───────────────────────────────────────────────────────────
   Widget _tokenTab() {

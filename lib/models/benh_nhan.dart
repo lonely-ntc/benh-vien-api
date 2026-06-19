@@ -192,5 +192,44 @@ class BenhNhan {
       'ngayCapNhat': FieldValue.serverTimestamp(),
     };
   }
+
+  /// Payload chuẩn để đẩy lên API ngoài — các trường danh mục chỉ lấy id (String).
+  /// Null nếu không có dữ liệu. Format khớp chuẩn JSON API:
+  /// {"GioiTinh":"263","DanTocId":"15","ChanDoanBenh":"16",...}
+  Map<String, dynamic> toApiPayload() => {
+    'Id':                   null,
+    'UnitId':               null,
+    'MaBenhNhan':           cccd ?? '',
+    'HoTen':                hoTen,
+    'NgaySinh':             ngaySinh,
+    'GioiTinh':             gioiTinhItem?.id.toString(),
+    'DanTocId':             danTocItem?.id.toString(),
+    'MaDinhDanhCaNhan':     cccd ?? '000',
+    'SDT':                  soDienThoai,
+    'BHYT':                 baoHiemYTe,
+    'NgheNghiep':           ngheNghiep,
+    'DiaChi':               diaChi ?? '',
+    'CityId':               tinhItem?.id.toString(),
+    'WardId':               phuong,
+    'NhomMau':              nhomMau,
+    'BenhNen':              benhNenItem?.id.toString(),
+    'BenhTruyenNhiem':      benhTruyenNhiemItem?.id.toString(),
+    'TinhTrangTiemChung':   tinhTrangTiemChungItem?.id.toString(),
+    'CoKhong':              coKhongItem?.id.toString(),
+    'DieuTri':              dieuTriItem?.id.toString(),
+    'HinhThucDieuTri':      hinhThucDieuTriItem?.id.toString(),
+    'ChanDoanBenh':         chanDoanBenhItem?.id.toString(),
+    'PhanLoaiChanDoan':     phanLoaiChanDoanItem?.id.toString(),
+    'PhanDoBenh':           phanDoBenhItem?.id.toString(),
+    'LoaiBenhPham':         loaiBenhPhamItem?.id.toString(),
+    'LoaiXetNghiem':        loaiXetNghiemItem?.id.toString(),
+    'KetQuaXetNghiem':      ketQuaXetNghiemItem?.id.toString(),
+    'CoSoBaoCao':           coSoBaoCaoItem?.id.toString(),
+    'CoSoDieuTri':          coSoDieuTriItem?.id.toString(),
+    'DonViDieuTra':         donViDieuTra,
+    'PhongKham':            phongKham,
+    'TrangThai':            trangThai ?? 'Chờ',
+    'SoThuTu':              soThuTu,
+  };
 }
 

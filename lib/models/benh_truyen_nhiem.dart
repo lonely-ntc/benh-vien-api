@@ -277,8 +277,8 @@ class BenhTruyenNhiem {
     'ngayCapNhat': FieldValue.serverTimestamp(),
   };
 
-  /// Payload chuẩn để đẩy lên API ngoài — các trường danh mục chỉ lấy id (String)
-  /// Null nếu không có dữ liệu, khớp với format:
+  /// Payload chuẩn để đẩy lên API ngoài — các trường danh mục chỉ lấy id (String).
+  /// Khớp 100% với format API chuẩn:
   /// {"GioiTinh":"263","DanTocId":"15","ChanDoanBenh":"16",...}
   Map<String, dynamic> toApiPayload() => {
     'Id':                   null,
@@ -308,11 +308,12 @@ class BenhTruyenNhiem {
     'NoiOHienNay_KhuPho':   null,
     'KhuPhoAp':             khuPhoAp ?? '',
     'SoHSBA':               soHSBA ?? '',
+    // CoSoDieuTri: lấy id nếu đã chọn từ dropdown, ngược lại dùng text
     'CoSoDieuTri':          coSoDieuTriItem?.id.toString(),
     'CityId_CSDT':          cityIdCSDTItem?.id.toString(),
-    'HinhThucDieuTri':      hinhThucDieuTriItem?.id.toString(),
     'ChanDoanBenh':         chanDoanBenhItem?.id.toString(),
     'PhanDoBenh':           phanDoBenhItem?.id.toString(),
+    // ThongTinDieuTri: lấy name vì API nhận text (không phải id số)
     'ThongTinDieuTri':      thongTinDieuTriItem?.name,
     'ChanDoanBienChung':    chanDoanBienChung ?? '',
     'ChanDoanBenhKemTheo':  chanDoanBenhKemTheo ?? '',
@@ -328,10 +329,13 @@ class BenhTruyenNhiem {
     'LoaiXN':               loaiXNItem?.id.toString() ?? '',
     'KetQuaXN':             ketQuaXNItem?.id.toString() ?? '',
     'TinhTrangTiem':        tinhTrangTiemItem?.id.toString(),
+    'HinhThucDieuTri':      hinhThucDieuTriItem?.id.toString(),
+    'ChanDoanChinh':        null,
     'SoMuiTiemUong':        soMuiTiemUong?.toString() ?? '',
     'TienSuDichTe':         tienSuDichTe ?? '',
     'NguoiDieuTraDichTe':   nguoiDieuTraDichTe,
     'SDTNguoiDieuTraDTe':   sdtNguoiDieuTraDTe,
+    // DonViDieuTra: lấy id nếu có item, ngược lại dùng text đã nhập
     'DonViDieuTra':         donViDieuTra,
     'EmailDonViDieuTra':    emailDonViDieuTra ?? '',
     'NgayBaoCao':           ngayBaoCao,
@@ -339,6 +343,5 @@ class BenhTruyenNhiem {
     'SDTNguoiBaoCao':       sdtNguoiBaoCao,
     'EmailNguoiBaoCao':     emailNguoiBaoCao,
     'PhanDoBenhText':       phanDoBenhText,
-    'ChanDoanChinh':        null,
   };
 }

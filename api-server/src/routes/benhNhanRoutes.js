@@ -72,6 +72,20 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/tatcaBenhNhan
+ * Lấy toàn bộ bệnh nhân không phân trang (dùng để export/xem tất cả)
+ */
+router.get('/tatca', async (req, res) => {
+  try {
+    const snap = await db.collection('benhNhan').orderBy('soThuTu').get();
+    const data = snap.docs.map(d => ({ id: d.id, ...sanitize(d.data()) }));
+    res.json({ success: true, total: data.length, data });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+/**
  * GET /api/benhNhan/:id
  */
 router.get('/:id', async (req, res) => {
