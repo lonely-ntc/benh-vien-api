@@ -58,6 +58,48 @@ class ApiPushService {
     return results;
   }
 
+  /// Đẩy một ca bệnh truyền nhiễm lên API
+  Future<Map<String, String>> dayMotBTN(
+      String token, Map<String, dynamic> data) async {
+    try {
+      final resp = await http.post(
+        Uri.parse('$_baseUrl/api/benhTruyenNhiem/push'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(data),
+      ).timeout(const Duration(seconds: 20));
+
+      if (resp.statusCode == 200 || resp.statusCode == 201) {
+        return {'status': ok, 'message': 'Đẩy thành công'};
+      } else if (resp.statusCode == 409) {
+        return {'status': dayCo, 'message': 'Bản ghi đã tồn tại'};
+      } else {
+        final body = jsonDecode(resp.body);
+        return {'status': loi, 'message': body['message'] ?? 'Lỗi ${resp.statusCode}'};
+      }
+    } catch (e) {
+      return {'status': loi, 'message': e.toString()};
+    }
+  }
+
+  /// Đẩy nhiều ca BTN
+  Future<List<PushKetQua>> dayNhieuBTN(
+      String token, List<Map<String, dynamic>> danhSach) async {
+    final results = <PushKetQua>[];
+    for (final item in danhSach) {
+      final ket = await dayMotBTN(token, item);
+      results.add(PushKetQua(
+        id:      item['id'] as String? ?? '',
+        hoTen:   item['hoTen'] as String? ?? '',
+        status:  ket['status']!,
+        message: ket['message']!,
+      ));
+    }
+    return results;
+  }
+
   /// Lấy token từ username/password
   Future<String?> layToken(String username, String password) async {
     try {

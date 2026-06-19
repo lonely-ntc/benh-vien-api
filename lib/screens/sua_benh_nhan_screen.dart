@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/benh_nhan.dart';
 import '../models/category_options.dart';
 import '../services/firestore_service.dart';
@@ -24,17 +24,16 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
   late final TextEditingController _baoHiemYTeCtrl;
   late final TextEditingController _diaChiCtrl;
   late final TextEditingController _phongKhamCtrl;
-  late final TextEditingController _coSoBaoCaoCtrl;
   late final TextEditingController _donViDieuTraCtrl;
-  late final TextEditingController _coSoDieuTriCtrl;
 
   // ── Dropdown values ──────────────────────────────────────────────────────
-  String? _gioiTinh, _danToc, _ngheNghiep, _nhomMau;
-  String? _tinh, _phuong;
-  String? _benhNen, _benhTruyenNhiem, _tinhTrangTiemChung, _coKhong;
-  String? _dieuTri, _hinhThucDieuTri, _chanDoanBenh;
-  String? _phanLoaiChanDoan, _phanDoBenh;
-  String? _loaiBenhPham, _loaiXetNghiem, _ketQuaXetNghiem;
+  CategoryItem? _gioiTinh, _danToc;
+  String? _ngheNghiep, _nhomMau;
+  CategoryItem? _tinh;
+  CategoryItem? _benhNen, _benhTruyenNhiem, _tinhTrangTiemChung, _coKhong;
+  CategoryItem? _dieuTri, _hinhThucDieuTri, _chanDoanBenh;
+  CategoryItem? _phanLoaiChanDoan, _phanDoBenh;
+  CategoryItem? _loaiBenhPham, _loaiXetNghiem, _ketQuaXetNghiem;
   String? _trangThai;
 
   @override
@@ -48,28 +47,25 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
     _baoHiemYTeCtrl   = TextEditingController(text: bn.baoHiemYTe ?? '');
     _diaChiCtrl       = TextEditingController(text: bn.diaChi ?? '');
     _phongKhamCtrl    = TextEditingController(text: bn.phongKham ?? '');
-    _coSoBaoCaoCtrl   = TextEditingController(text: bn.coSoBaoCao ?? '');
     _donViDieuTraCtrl = TextEditingController(text: bn.donViDieuTra ?? '');
-    _coSoDieuTriCtrl  = TextEditingController(text: bn.coSoDieuTri ?? '');
 
-    _gioiTinh           = bn.gioiTinh;
-    _danToc             = bn.danToc;
+    _gioiTinh           = bn.gioiTinhItem;
+    _danToc             = bn.danTocItem;
     _ngheNghiep         = bn.ngheNghiep;
     _nhomMau            = bn.nhomMau;
-    _tinh               = bn.tinh;
-    _phuong             = bn.phuong;
-    _benhNen            = bn.benhNen;
-    _benhTruyenNhiem    = bn.benhTruyenNhiem;
-    _tinhTrangTiemChung = bn.tinhTrangTiemChung;
-    _coKhong            = bn.coKhong;
-    _dieuTri            = bn.dieuTri;
-    _hinhThucDieuTri    = bn.hinhThucDieuTri;
-    _chanDoanBenh       = bn.chanDoanBenh;
-    _phanLoaiChanDoan   = bn.phanLoaiChanDoan;
-    _phanDoBenh         = bn.phanDoBenh;
-    _loaiBenhPham       = bn.loaiBenhPham;
-    _loaiXetNghiem      = bn.loaiXetNghiem;
-    _ketQuaXetNghiem    = bn.ketQuaXetNghiem;
+    _tinh               = bn.tinhItem;
+    _benhNen            = bn.benhNenItem;
+    _benhTruyenNhiem    = bn.benhTruyenNhiemItem;
+    _tinhTrangTiemChung = bn.tinhTrangTiemChungItem;
+    _coKhong            = bn.coKhongItem;
+    _dieuTri            = bn.dieuTriItem;
+    _hinhThucDieuTri    = bn.hinhThucDieuTriItem;
+    _chanDoanBenh       = bn.chanDoanBenhItem;
+    _phanLoaiChanDoan   = bn.phanLoaiChanDoanItem;
+    _phanDoBenh         = bn.phanDoBenhItem;
+    _loaiBenhPham       = bn.loaiBenhPhamItem;
+    _loaiXetNghiem      = bn.loaiXetNghiemItem;
+    _ketQuaXetNghiem    = bn.ketQuaXetNghiemItem;
     _trangThai          = bn.trangThai ?? 'Chờ';
   }
 
@@ -77,8 +73,7 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
   void dispose() {
     for (final c in [
       _hoTenCtrl, _ngaySinhCtrl, _soDienThoaiCtrl, _cccdCtrl,
-      _baoHiemYTeCtrl, _diaChiCtrl, _phongKhamCtrl,
-      _coSoBaoCaoCtrl, _donViDieuTraCtrl, _coSoDieuTriCtrl,
+      _baoHiemYTeCtrl, _diaChiCtrl, _phongKhamCtrl, _donViDieuTraCtrl,
     ]) { c.dispose(); }
     super.dispose();
   }
@@ -130,31 +125,30 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
         id: widget.benhNhan.id,
         hoTen: _hoTenCtrl.text.trim(),
         ngaySinh: _ngaySinhCtrl.text.isNotEmpty ? _ngaySinhCtrl.text : null,
-        gioiTinh: _gioiTinh,
-        danToc: _danToc,
+        gioiTinhItem: _gioiTinh,
+        danTocItem: _danToc,
         ngheNghiep: _ngheNghiep,
         soDienThoai: _soDienThoaiCtrl.text.isNotEmpty ? _soDienThoaiCtrl.text : null,
         cccd: _cccdCtrl.text.isNotEmpty ? _cccdCtrl.text : null,
         baoHiemYTe: _baoHiemYTeCtrl.text.isNotEmpty ? _baoHiemYTeCtrl.text : null,
         diaChi: _diaChiCtrl.text.isNotEmpty ? _diaChiCtrl.text : null,
-        tinh: _tinh,
-        phuong: _phuong,
+        tinhItem: _tinh,
         nhomMau: _nhomMau,
-        benhNen: _benhNen,
-        benhTruyenNhiem: _benhTruyenNhiem,
-        tinhTrangTiemChung: _tinhTrangTiemChung,
-        coKhong: _coKhong,
-        dieuTri: _dieuTri,
-        hinhThucDieuTri: _hinhThucDieuTri,
-        chanDoanBenh: _chanDoanBenh,
-        phanLoaiChanDoan: _phanLoaiChanDoan,
-        phanDoBenh: _phanDoBenh,
-        loaiBenhPham: _loaiBenhPham,
-        loaiXetNghiem: _loaiXetNghiem,
-        ketQuaXetNghiem: _ketQuaXetNghiem,
-        coSoBaoCao: _coSoBaoCaoCtrl.text.isNotEmpty ? _coSoBaoCaoCtrl.text : null,
+        benhNenItem: _benhNen,
+        benhTruyenNhiemItem: _benhTruyenNhiem,
+        tinhTrangTiemChungItem: _tinhTrangTiemChung,
+        coKhongItem: _coKhong,
+        dieuTriItem: _dieuTri,
+        hinhThucDieuTriItem: _hinhThucDieuTri,
+        chanDoanBenhItem: _chanDoanBenh,
+        phanLoaiChanDoanItem: _phanLoaiChanDoan,
+        phanDoBenhItem: _phanDoBenh,
+        loaiBenhPhamItem: _loaiBenhPham,
+        loaiXetNghiemItem: _loaiXetNghiem,
+        ketQuaXetNghiemItem: _ketQuaXetNghiem,
+        coSoBaoCaoItem: widget.benhNhan.coSoBaoCaoItem,
         donViDieuTra: _donViDieuTraCtrl.text.isNotEmpty ? _donViDieuTraCtrl.text : null,
-        coSoDieuTri: _coSoDieuTriCtrl.text.isNotEmpty ? _coSoDieuTriCtrl.text : null,
+        coSoDieuTriItem: widget.benhNhan.coSoDieuTriItem,
         phongKham: _phongKhamCtrl.text.isNotEmpty ? _phongKhamCtrl.text : null,
         soThuTu: widget.benhNhan.soThuTu,
         trangThai: _trangThai,
@@ -222,7 +216,7 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
               _dateTf(_ngaySinhCtrl, 'Ngày sinh', Icons.cake_outlined),
               _dd('Giới tính', Icons.wc_outlined, _gioiTinh, CategoryOptions.gioiTinh, (v) => setState(() => _gioiTinh = v)),
               _dd('Dân tộc', Icons.people_outline, _danToc, CategoryOptions.danToc, (v) => setState(() => _danToc = v)),
-              _dd('Nghề nghiệp', Icons.work_outline, _ngheNghiep, CategoryOptions.ngheNghiep, (v) => setState(() => _ngheNghiep = v)),
+              _ddStr('Nghề nghiệp', Icons.work_outline, _ngheNghiep, CategoryOptions.ngheNghiep, (v) => setState(() => _ngheNghiep = v)),
               _tf(_soDienThoaiCtrl, 'Số điện thoại', Icons.phone_outlined, type: TextInputType.phone),
               _tf(_cccdCtrl, 'CCCD / CMND', Icons.credit_card_outlined,
                   type: TextInputType.number,
@@ -241,9 +235,9 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
 
             // ── Thông tin y tế ────────────────────────────────────
             _Section(title: 'Thông tin y tế', icon: Icons.medical_information_outlined, children: [
-              _dd('Nhóm máu', Icons.bloodtype_outlined, _nhomMau, CategoryOptions.nhomMau, (v) => setState(() => _nhomMau = v)),
+              _ddStr('Nhóm máu', Icons.bloodtype_outlined, _nhomMau, CategoryOptions.nhomMau, (v) => setState(() => _nhomMau = v)),
               _dd('Bệnh nền', Icons.monitor_heart_outlined, _benhNen, CategoryOptions.benhNen, (v) => setState(() => _benhNen = v)),
-              _dd('Bệnh truyền nhiễm', Icons.coronavirus_outlined, _benhTruyenNhiem, CategoryOptions.benhTruyenNhiem, (v) => setState(() => _benhTruyenNhiem = v)),
+              _dd('Bệnh truyền nhiễm', Icons.coronavirus_outlined, _benhTruyenNhiem, CategoryOptions.chanDoanBenh, (v) => setState(() => _benhTruyenNhiem = v)),
               _dd('Tình trạng tiêm chủng', Icons.vaccines_outlined, _tinhTrangTiemChung, CategoryOptions.tinhTrangTiemChung, (v) => setState(() => _tinhTrangTiemChung = v)),
               _dd('Dị ứng (Có/Không)', Icons.warning_amber_outlined, _coKhong, CategoryOptions.coKhong, (v) => setState(() => _coKhong = v)),
             ]),
@@ -251,7 +245,7 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
 
             // ── Chẩn đoán & Điều trị ──────────────────────────────
             _Section(title: 'Chẩn đoán & Điều trị', icon: Icons.local_hospital_outlined, children: [
-              _dd('Chẩn đoán bệnh', Icons.content_paste_search_outlined, _chanDoanBenh, CategoryOptions.benhTruyenNhiem, (v) => setState(() => _chanDoanBenh = v)),
+              _dd('Chẩn đoán bệnh', Icons.content_paste_search_outlined, _chanDoanBenh, CategoryOptions.chanDoanBenh, (v) => setState(() => _chanDoanBenh = v)),
               _dd('Phân loại chẩn đoán', Icons.category_outlined, _phanLoaiChanDoan, CategoryOptions.phanLoaiChanDoan, (v) => setState(() => _phanLoaiChanDoan = v)),
               _dd('Phân độ bệnh', Icons.bar_chart_outlined, _phanDoBenh, CategoryOptions.phanDoBenh, (v) => setState(() => _phanDoBenh = v)),
               _dd('Điều trị', Icons.medical_services_outlined, _dieuTri, CategoryOptions.dieuTri, (v) => setState(() => _dieuTri = v)),
@@ -269,16 +263,14 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
 
             // ── Cơ sở & Đơn vị ───────────────────────────────────
             _Section(title: 'Cơ sở & Đơn vị', icon: Icons.account_balance_outlined, children: [
-              _tf(_coSoBaoCaoCtrl, 'Cơ sở báo cáo', Icons.business_outlined),
               _tf(_donViDieuTraCtrl, 'Đơn vị điều tra', Icons.domain_outlined),
-              _tf(_coSoDieuTriCtrl, 'Cơ sở điều trị', Icons.local_hospital_outlined),
               _tf(_phongKhamCtrl, 'Phòng khám', Icons.door_front_door_outlined),
             ]),
             const SizedBox(height: 12),
 
             // ── Trạng thái ───────────────────────────────────────
             _Section(title: 'Trạng thái khám', icon: Icons.info_outline, children: [
-              _dd('Trạng thái', Icons.pending_actions_outlined, _trangThai, CategoryOptions.trangThai, (v) => setState(() => _trangThai = v)),
+              _ddStr('Trạng thái', Icons.pending_actions_outlined, _trangThai, CategoryOptions.trangThai, (v) => setState(() => _trangThai = v)),
             ]),
             const SizedBox(height: 24),
 
@@ -331,8 +323,23 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
         ),
       );
 
-  Widget _dd(String label, IconData icon, String? value, List<String> items,
-      void Function(String?) onChanged) =>
+  Widget _dd(String label, IconData icon, CategoryItem? value,
+      List<CategoryItem> items, void Function(CategoryItem?) onChanged) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: DropdownButtonFormField<CategoryItem>(
+          initialValue: value,
+          decoration: _dec(label, icon),
+          isExpanded: true,
+          hint: Text('Chọn $label', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+          items: items.map((e) => DropdownMenuItem(
+              value: e, child: Text(e.name, overflow: TextOverflow.ellipsis))).toList(),
+          onChanged: onChanged,
+        ),
+      );
+
+  Widget _ddStr(String label, IconData icon, String? value,
+      List<String> items, void Function(String?) onChanged) =>
       Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: DropdownButtonFormField<String>(
@@ -391,3 +398,5 @@ class _Section extends StatelessWidget {
     ]),
   );
 }
+
+

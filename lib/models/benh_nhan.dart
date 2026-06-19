@@ -1,53 +1,55 @@
-// Model bệnh nhân — ánh xạ với collection Firestore
-// Cấu trúc theo CategoryCode chuẩn
+﻿// Model bệnh nhân — ánh xạ với collection Firestore
+// Các trường danh mục lưu dạng Map {"id": int, "name": String} lên Firestore
+// để khớp chuẩn API.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'category_options.dart';
 
 class BenhNhan {
   final String id;
 
   // ── Thông tin cá nhân ──────────────────────────────────────────────────
   final String hoTen;
-  final String? ngaySinh;           // "dd/MM/yyyy"
-  final String? gioiTinh;           // CategoryCode: GioiTinh
-  final String? danToc;             // CategoryCode: DanToc
-  final String? ngheNghiep;         // CategoryCode: NgheNghiep
+  final String? ngaySinh;               // "dd/MM/yyyy"
+  final CategoryItem? gioiTinhItem;     // GioiTinh — lưu {id,name}
+  final CategoryItem? danTocItem;       // DanToc   — lưu {id,name}
+  final String? ngheNghiep;             // string (không có API id)
   final String? soDienThoai;
-  final String? cccd;               // Căn cước công dân
-  final String? baoHiemYTe;         // Số BHYT
+  final String? cccd;
+  final String? baoHiemYTe;
 
   // ── Địa chỉ ───────────────────────────────────────────────────────────
-  final String? diaChi;             // Địa chỉ đầy đủ
-  final String? tinh;               // CategoryCode: Tinh
-  final String? phuong;             // CategoryCode: Phuong
-  final String? phuongMoiHCM;       // CategoryCode: PhuongMoiHCM
+  final String? diaChi;
+  final CategoryItem? tinhItem;         // Tinh — lưu {id,name}
+  final String? phuong;
+  final String? phuongMoiHCM;
 
   // ── Thông tin y tế ────────────────────────────────────────────────────
-  final String? nhomMau;
-  final String? benhNen;            // CategoryCode: BenhNen
-  final String? benhTruyenNhiem;    // CategoryCode: BenhTruyenNhiem
-  final String? tinhTrangTiemChung; // CategoryCode: TinhTrangTiemChung
-  final String? coKhong;            // CategoryCode: CoKhong (Có/Không — dị ứng)
+  final String? nhomMau;                // string (không có API id)
+  final CategoryItem? benhNenItem;      // BenhNen
+  final CategoryItem? benhTruyenNhiemItem; // ChanDoanBenh
+  final CategoryItem? tinhTrangTiemChungItem; // TinhTrangTiemChung
+  final CategoryItem? coKhongItem;      // CoKhong
 
-  // ── Thông tin khám / điều trị ─────────────────────────────────────────
-  final String? dieuTri;            // CategoryCode: DieuTri
-  final String? hinhThucDieuTri;    // CategoryCode: HinhThucDieuTri
-  final String? chanDoanBenh;       // CategoryCode: ChanDoanBenh
-  final String? phanLoaiChanDoan;   // CategoryCode: PhanLoaiChanDoan
-  final String? phanDoBenh;         // CategoryCode: PhanDoBenh
-  final String? loaiBenhPham;       // CategoryCode: LoaiBenhPham
-  final String? loaiXetNghiem;      // CategoryCode: LoaiXetNghiem
-  final String? ketQuaXetNghiem;    // CategoryCode: KetQuaXetNghiem
+  // ── Chẩn đoán & Điều trị ─────────────────────────────────────────────
+  final CategoryItem? dieuTriItem;          // DieuTri
+  final CategoryItem? hinhThucDieuTriItem;  // HinhThucDieuTri
+  final CategoryItem? chanDoanBenhItem;     // ChanDoanBenh
+  final CategoryItem? phanLoaiChanDoanItem; // PhanLoaiChanDoan
+  final CategoryItem? phanDoBenhItem;       // PhanDoBenh
+  final CategoryItem? loaiBenhPhamItem;     // LoaiBenhPham
+  final CategoryItem? loaiXetNghiemItem;    // LoaiXetNghiem
+  final CategoryItem? ketQuaXetNghiemItem;  // KetQuaXetNghiem
 
   // ── Cơ sở / đơn vị ───────────────────────────────────────────────────
-  final String? coSoBaoCao;         // CategoryCode: CoSoBaoCao
-  final String? donViDieuTra;       // CategoryCode: DonViDieuTra
-  final String? coSoDieuTri;        // CategoryCode: CoSoDieuTri
+  final CategoryItem? coSoBaoCaoItem;   // CoSoBaoCao
+  final String? donViDieuTra;           // text
+  final CategoryItem? coSoDieuTriItem;  // CoSoDieuTri
   final String? phongKham;
 
   // ── Token / trạng thái ────────────────────────────────────────────────
   final int? soThuTu;
-  final String? trangThai;          // "Chờ" | "Đang khám" | "Đã khám"
+  final String? trangThai;
   final DateTime? ngayDangKy;
   final DateTime? ngayCapNhat;
 
@@ -55,32 +57,32 @@ class BenhNhan {
     required this.id,
     required this.hoTen,
     this.ngaySinh,
-    this.gioiTinh,
-    this.danToc,
+    this.gioiTinhItem,
+    this.danTocItem,
     this.ngheNghiep,
     this.soDienThoai,
     this.cccd,
     this.baoHiemYTe,
     this.diaChi,
-    this.tinh,
+    this.tinhItem,
     this.phuong,
     this.phuongMoiHCM,
     this.nhomMau,
-    this.benhNen,
-    this.benhTruyenNhiem,
-    this.tinhTrangTiemChung,
-    this.coKhong,
-    this.dieuTri,
-    this.hinhThucDieuTri,
-    this.chanDoanBenh,
-    this.phanLoaiChanDoan,
-    this.phanDoBenh,
-    this.loaiBenhPham,
-    this.loaiXetNghiem,
-    this.ketQuaXetNghiem,
-    this.coSoBaoCao,
+    this.benhNenItem,
+    this.benhTruyenNhiemItem,
+    this.tinhTrangTiemChungItem,
+    this.coKhongItem,
+    this.dieuTriItem,
+    this.hinhThucDieuTriItem,
+    this.chanDoanBenhItem,
+    this.phanLoaiChanDoanItem,
+    this.phanDoBenhItem,
+    this.loaiBenhPhamItem,
+    this.loaiXetNghiemItem,
+    this.ketQuaXetNghiemItem,
+    this.coSoBaoCaoItem,
     this.donViDieuTra,
-    this.coSoDieuTri,
+    this.coSoDieuTriItem,
     this.phongKham,
     this.soThuTu,
     this.trangThai,
@@ -88,86 +90,107 @@ class BenhNhan {
     this.ngayCapNhat,
   });
 
+  // ── Getters tiện ích (tương thích ngược với code cũ dùng String) ───────
+  String? get gioiTinh           => gioiTinhItem?.name;
+  String? get danToc             => danTocItem?.name;
+  String? get tinh               => tinhItem?.name;
+  String? get benhNen            => benhNenItem?.name;
+  String? get benhTruyenNhiem    => benhTruyenNhiemItem?.name;
+  String? get tinhTrangTiemChung => tinhTrangTiemChungItem?.name;
+  String? get coKhong            => coKhongItem?.name;
+  String? get dieuTri            => dieuTriItem?.name;
+  String? get hinhThucDieuTri    => hinhThucDieuTriItem?.name;
+  String? get chanDoanBenh       => chanDoanBenhItem?.name;
+  String? get phanLoaiChanDoan   => phanLoaiChanDoanItem?.name;
+  String? get phanDoBenh         => phanDoBenhItem?.name;
+  String? get loaiBenhPham       => loaiBenhPhamItem?.name;
+  String? get loaiXetNghiem      => loaiXetNghiemItem?.name;
+  String? get ketQuaXetNghiem    => ketQuaXetNghiemItem?.name;
+  String? get coSoBaoCao         => coSoBaoCaoItem?.name;
+  String? get coSoDieuTri        => coSoDieuTriItem?.name;
+
+  // ── Parse từ Firestore ─────────────────────────────────────────────────
   factory BenhNhan.fromFirestore(Map<String, dynamic> data, String docId) {
-    DateTime? parseTimestamp(dynamic val) {
-      if (val == null) return null;
-      if (val is Timestamp) return val.toDate();
-      return null;
-    }
+    DateTime? ts(dynamic v) => v is Timestamp ? v.toDate() : null;
+
+    CategoryItem? cat(dynamic v, List<CategoryItem> list) =>
+        CategoryItem.fromFirestore(v, list);
 
     return BenhNhan(
       id: docId,
       hoTen: data['hoTen'] ?? '',
       ngaySinh: data['ngaySinh'],
-      gioiTinh: data['gioiTinh'],
-      danToc: data['danToc'],
+      gioiTinhItem:           cat(data['gioiTinh'],           CategoryOptions.gioiTinh),
+      danTocItem:             cat(data['danToc'],             CategoryOptions.danToc),
       ngheNghiep: data['ngheNghiep'],
       soDienThoai: data['soDienThoai'],
       cccd: data['cccd'],
       baoHiemYTe: data['baoHiemYTe'],
       diaChi: data['diaChi'],
-      tinh: data['tinh'],
+      tinhItem:               cat(data['tinh'],               CategoryOptions.tinh),
       phuong: data['phuong'],
       phuongMoiHCM: data['phuongMoiHCM'],
       nhomMau: data['nhomMau'],
-      benhNen: data['benhNen'],
-      benhTruyenNhiem: data['benhTruyenNhiem'],
-      tinhTrangTiemChung: data['tinhTrangTiemChung'],
-      coKhong: data['coKhong'],
-      dieuTri: data['dieuTri'],
-      hinhThucDieuTri: data['hinhThucDieuTri'],
-      chanDoanBenh: data['chanDoanBenh'],
-      phanLoaiChanDoan: data['phanLoaiChanDoan'],
-      phanDoBenh: data['phanDoBenh'],
-      loaiBenhPham: data['loaiBenhPham'],
-      loaiXetNghiem: data['loaiXetNghiem'],
-      ketQuaXetNghiem: data['ketQuaXetNghiem'],
-      coSoBaoCao: data['coSoBaoCao'],
+      benhNenItem:            cat(data['benhNen'],            CategoryOptions.benhNen),
+      benhTruyenNhiemItem:    cat(data['benhTruyenNhiem'],    CategoryOptions.chanDoanBenh),
+      tinhTrangTiemChungItem: cat(data['tinhTrangTiemChung'], CategoryOptions.tinhTrangTiemChung),
+      coKhongItem:            cat(data['coKhong'],            CategoryOptions.coKhong),
+      dieuTriItem:            cat(data['dieuTri'],            CategoryOptions.dieuTri),
+      hinhThucDieuTriItem:    cat(data['hinhThucDieuTri'],    CategoryOptions.hinhThucDieuTri),
+      chanDoanBenhItem:       cat(data['chanDoanBenh'],       CategoryOptions.chanDoanBenh),
+      phanLoaiChanDoanItem:   cat(data['phanLoaiChanDoan'],   CategoryOptions.phanLoaiChanDoan),
+      phanDoBenhItem:         cat(data['phanDoBenh'],         CategoryOptions.phanDoBenh),
+      loaiBenhPhamItem:       cat(data['loaiBenhPham'],       CategoryOptions.loaiBenhPham),
+      loaiXetNghiemItem:      cat(data['loaiXetNghiem'],      CategoryOptions.loaiXetNghiem),
+      ketQuaXetNghiemItem:    cat(data['ketQuaXetNghiem'],    CategoryOptions.ketQuaXetNghiem),
+      coSoBaoCaoItem:         cat(data['coSoBaoCao'],         CategoryOptions.coSoBaoCao),
       donViDieuTra: data['donViDieuTra'],
-      coSoDieuTri: data['coSoDieuTri'],
+      coSoDieuTriItem:        cat(data['coSoDieuTri'],        CategoryOptions.coSoDieuTri),
       phongKham: data['phongKham'],
       soThuTu: data['soThuTu'] is int ? data['soThuTu'] : null,
       trangThai: data['trangThai'] ?? 'Chờ',
-      ngayDangKy: parseTimestamp(data['ngayDangKy']),
-      ngayCapNhat: parseTimestamp(data['ngayCapNhat']),
+      ngayDangKy:  ts(data['ngayDangKy']),
+      ngayCapNhat: ts(data['ngayCapNhat']),
     );
   }
 
+  // ── Ghi lên Firestore — lưu Map {id, name} cho từng trường danh mục ───
   Map<String, dynamic> toFirestore() {
     return {
       'hoTen': hoTen,
-      if (ngaySinh != null) 'ngaySinh': ngaySinh,
-      if (gioiTinh != null) 'gioiTinh': gioiTinh,
-      if (danToc != null) 'danToc': danToc,
-      if (ngheNghiep != null) 'ngheNghiep': ngheNghiep,
-      if (soDienThoai != null) 'soDienThoai': soDienThoai,
-      if (cccd != null) 'cccd': cccd,
-      if (baoHiemYTe != null) 'baoHiemYTe': baoHiemYTe,
-      if (diaChi != null) 'diaChi': diaChi,
-      if (tinh != null) 'tinh': tinh,
-      if (phuong != null) 'phuong': phuong,
-      if (phuongMoiHCM != null) 'phuongMoiHCM': phuongMoiHCM,
-      if (nhomMau != null) 'nhomMau': nhomMau,
-      if (benhNen != null) 'benhNen': benhNen,
-      if (benhTruyenNhiem != null) 'benhTruyenNhiem': benhTruyenNhiem,
-      if (tinhTrangTiemChung != null) 'tinhTrangTiemChung': tinhTrangTiemChung,
-      if (coKhong != null) 'coKhong': coKhong,
-      if (dieuTri != null) 'dieuTri': dieuTri,
-      if (hinhThucDieuTri != null) 'hinhThucDieuTri': hinhThucDieuTri,
-      if (chanDoanBenh != null) 'chanDoanBenh': chanDoanBenh,
-      if (phanLoaiChanDoan != null) 'phanLoaiChanDoan': phanLoaiChanDoan,
-      if (phanDoBenh != null) 'phanDoBenh': phanDoBenh,
-      if (loaiBenhPham != null) 'loaiBenhPham': loaiBenhPham,
-      if (loaiXetNghiem != null) 'loaiXetNghiem': loaiXetNghiem,
-      if (ketQuaXetNghiem != null) 'ketQuaXetNghiem': ketQuaXetNghiem,
-      if (coSoBaoCao != null) 'coSoBaoCao': coSoBaoCao,
-      if (donViDieuTra != null) 'donViDieuTra': donViDieuTra,
-      if (coSoDieuTri != null) 'coSoDieuTri': coSoDieuTri,
-      if (phongKham != null) 'phongKham': phongKham,
-      if (soThuTu != null) 'soThuTu': soThuTu,
-      'trangThai': trangThai ?? 'Chờ',
-      'ngayDangKy': ngayDangKy ?? FieldValue.serverTimestamp(),
+      if (ngaySinh != null)    'ngaySinh': ngaySinh,
+      if (gioiTinhItem != null)           'gioiTinh':           gioiTinhItem!.toMap(),
+      if (danTocItem != null)             'danToc':             danTocItem!.toMap(),
+      if (ngheNghiep != null)             'ngheNghiep':         ngheNghiep,
+      if (soDienThoai != null)            'soDienThoai':        soDienThoai,
+      if (cccd != null)                   'cccd':               cccd,
+      if (baoHiemYTe != null)             'baoHiemYTe':         baoHiemYTe,
+      if (diaChi != null)                 'diaChi':             diaChi,
+      if (tinhItem != null)               'tinh':               tinhItem!.toMap(),
+      if (phuong != null)                 'phuong':             phuong,
+      if (phuongMoiHCM != null)           'phuongMoiHCM':       phuongMoiHCM,
+      if (nhomMau != null)                'nhomMau':            nhomMau,
+      if (benhNenItem != null)            'benhNen':            benhNenItem!.toMap(),
+      if (benhTruyenNhiemItem != null)    'benhTruyenNhiem':    benhTruyenNhiemItem!.toMap(),
+      if (tinhTrangTiemChungItem != null) 'tinhTrangTiemChung': tinhTrangTiemChungItem!.toMap(),
+      if (coKhongItem != null)            'coKhong':            coKhongItem!.toMap(),
+      if (dieuTriItem != null)            'dieuTri':            dieuTriItem!.toMap(),
+      if (hinhThucDieuTriItem != null)    'hinhThucDieuTri':    hinhThucDieuTriItem!.toMap(),
+      if (chanDoanBenhItem != null)       'chanDoanBenh':       chanDoanBenhItem!.toMap(),
+      if (phanLoaiChanDoanItem != null)   'phanLoaiChanDoan':   phanLoaiChanDoanItem!.toMap(),
+      if (phanDoBenhItem != null)         'phanDoBenh':         phanDoBenhItem!.toMap(),
+      if (loaiBenhPhamItem != null)       'loaiBenhPham':       loaiBenhPhamItem!.toMap(),
+      if (loaiXetNghiemItem != null)      'loaiXetNghiem':      loaiXetNghiemItem!.toMap(),
+      if (ketQuaXetNghiemItem != null)    'ketQuaXetNghiem':    ketQuaXetNghiemItem!.toMap(),
+      if (coSoBaoCaoItem != null)         'coSoBaoCao':         coSoBaoCaoItem!.toMap(),
+      if (donViDieuTra != null)           'donViDieuTra':       donViDieuTra,
+      if (coSoDieuTriItem != null)        'coSoDieuTri':        coSoDieuTriItem!.toMap(),
+      if (phongKham != null)              'phongKham':          phongKham,
+      if (soThuTu != null)                'soThuTu':            soThuTu,
+      'trangThai':   trangThai ?? 'Chờ',
+      'ngayDangKy':  ngayDangKy ?? FieldValue.serverTimestamp(),
       'ngayCapNhat': FieldValue.serverTimestamp(),
     };
   }
 }
+

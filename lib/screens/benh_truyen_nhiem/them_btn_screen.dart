@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:math';
 import '../../models/benh_truyen_nhiem.dart';
 import '../../models/category_options.dart';
@@ -47,14 +47,15 @@ class _ThemBTNScreenState extends State<ThemBTNScreen> {
   final _phanDoBenhTextCtrl   = TextEditingController();
 
   // ── Dropdown values ─────────────────────────────────────────────────────
-  String? _gioiTinh, _danToc, _ngheNghiep;
-  String? _coThai, _cityIdHoc, _wardIdHoc;
-  String? _cityId, _wardId;
-  String? _hinhThucDieuTri, _chanDoanBenh, _phanDoBenh, _thongTinDieuTri;
-  String? _benhNenKemTheo, _phanLoaiChanDoan;
-  String? _cityIdCSDT;
-  String? _layMauXN, _loaiBenhPham, _loaiXN, _ketQuaXN;
-  String? _tinhTrangTiem;
+  CategoryItem? _gioiTinh, _danToc;
+  String? _ngheNghiep;
+  CategoryItem? _coThai;
+  CategoryItem? _cityIdHoc, _cityId, _cityIdCSDT;
+  String? _wardIdHoc, _wardId;
+  CategoryItem? _hinhThucDieuTri, _chanDoanBenh, _phanDoBenh, _thongTinDieuTri;
+  CategoryItem? _benhNenKemTheo, _phanLoaiChanDoan, _coSoDieuTri;
+  CategoryItem? _layMauXN, _loaiBenhPham, _loaiXN, _ketQuaXN;
+  CategoryItem? _tinhTrangTiem;
 
   @override
   void dispose() {
@@ -103,45 +104,45 @@ class _ThemBTNScreenState extends State<ThemBTNScreen> {
       final obj = BenhTruyenNhiem(
         id: '',
         hoTen: _hoTenCtrl.text.trim(),
-        benhAnId: _sinhBenhAnId(), // tự sinh mã ngẫu nhiên
+        benhAnId: _sinhBenhAnId(),
         ngaySinh: _ngaySinhCtrl.text.isNotEmpty ? _ngaySinhCtrl.text : null,
-        gioiTinh: _gioiTinh,
-        danTocId: _danToc,
+        gioiTinhItem: _gioiTinh,
+        danTocItem: _danToc,
         maDinhDanhCaNhan: _maDinhDanhCtrl.text.trim().isNotEmpty ? _maDinhDanhCtrl.text.trim() : '000',
         tenNguoiBaoHo: _tenNguoiBaoHoCtrl.text.trim().isNotEmpty ? _tenNguoiBaoHoCtrl.text.trim() : null,
         sdt: _sdtCtrl.text.trim().isNotEmpty ? _sdtCtrl.text.trim() : null,
-        coThai: _coThai,
+        coThaiItem: _coThai,
         tuanThai: int.tryParse(_tuanThaiCtrl.text.trim()),
         ngheNghiep: _ngheNghiep,
         noiLamViecHoc: _noiLamViecCtrl.text.trim().isNotEmpty ? _noiLamViecCtrl.text.trim() : null,
         diaChinoiLamViecHoc: _diaChiLamViecCtrl.text.trim().isNotEmpty ? _diaChiLamViecCtrl.text.trim() : null,
-        cityIdHoc: _cityIdHoc,
+        cityIdHocItem: _cityIdHoc,
         wardIdHoc: _wardIdHoc,
         noiOHienNay: _noiOHienNayCtrl.text.trim().isNotEmpty ? _noiOHienNayCtrl.text.trim() : null,
-        cityId: _cityId,
+        cityIdItem: _cityId,
         wardId: _wardId,
         khuPhoAp: _khuPhoApCtrl.text.trim().isNotEmpty ? _khuPhoApCtrl.text.trim() : null,
         soHSBA: _soHSBACtrl.text.trim().isNotEmpty ? _soHSBACtrl.text.trim() : null,
-        coSoDieuTri: _coSoDieuTriCtrl.text.trim().isNotEmpty ? _coSoDieuTriCtrl.text.trim() : null,
-        cityIdCSDT: _cityIdCSDT,
-        hinhThucDieuTri: _hinhThucDieuTri,
-        chanDoanBenh: _chanDoanBenh,
-        phanDoBenh: _phanDoBenh,
-        thongTinDieuTri: _thongTinDieuTri,
+        coSoDieuTriItem: _coSoDieuTri,
+        cityIdCSDTItem: _cityIdCSDT,
+        hinhThucDieuTriItem: _hinhThucDieuTri,
+        chanDoanBenhItem: _chanDoanBenh,
+        phanDoBenhItem: _phanDoBenh,
+        thongTinDieuTriItem: _thongTinDieuTri,
         chanDoanBienChung: _chanDoanBienChungCtrl.text.trim().isNotEmpty ? _chanDoanBienChungCtrl.text.trim() : null,
         chanDoanBenhKemTheo: _chanDoanKemTheoCtrl.text.trim().isNotEmpty ? _chanDoanKemTheoCtrl.text.trim() : null,
-        benhNenKemTheoId: _benhNenKemTheo,
+        benhNenKemTheoItem: _benhNenKemTheo,
         ngayKhoiPhat: _ngayKhoiPhatCtrl.text.isNotEmpty ? _ngayKhoiPhatCtrl.text : null,
         ngayNhapVien: _ngayNhapVienCtrl.text.isNotEmpty ? _ngayNhapVienCtrl.text : null,
         ngayXVTVCV: _ngayXVTVCVCtrl.text.isNotEmpty ? _ngayXVTVCVCtrl.text : null,
-        phanLoaiChanDoan: _phanLoaiChanDoan,
-        layMauXN: _layMauXN,
-        loaiBenhPham: _loaiBenhPham,
+        phanLoaiChanDoanItem: _phanLoaiChanDoan,
+        layMauXNItem: _layMauXN,
+        loaiBenhPhamItem: _loaiBenhPham,
         donViThucHienXN: _donViXNCtrl.text.trim().isNotEmpty ? _donViXNCtrl.text.trim() : null,
         ngayLayMau: _ngayLayMauCtrl.text.isNotEmpty ? _ngayLayMauCtrl.text : null,
-        loaiXN: _loaiXN,
-        ketQuaXN: _ketQuaXN,
-        tinhTrangTiem: _tinhTrangTiem,
+        loaiXNItem: _loaiXN,
+        ketQuaXNItem: _ketQuaXN,
+        tinhTrangTiemItem: _tinhTrangTiem,
         soMuiTiemUong: int.tryParse(_soMuiTiemCtrl.text.trim()),
         tienSuDichTe: _tienSuDichTeCtrl.text.trim().isNotEmpty ? _tienSuDichTeCtrl.text.trim() : null,
         nguoiDieuTraDichTe: _nguoiDieuTraCtrl.text.trim().isNotEmpty ? _nguoiDieuTraCtrl.text.trim() : null,
@@ -232,7 +233,7 @@ class _ThemBTNScreenState extends State<ThemBTNScreen> {
               _tf(_sdtCtrl, '8. Số điện thoại (10 số)', Icons.phone_outlined, type: TextInputType.phone),
               _dd('9. Có thai', Icons.pregnant_woman_outlined, _coThai, CategoryOptions.coKhong, (v) => setState(() => _coThai = v)),
               _tf(_tuanThaiCtrl, '10. Tuần thai', Icons.access_time_outlined, type: TextInputType.number),
-              _dd('11. Nghề nghiệp', Icons.work_outline, _ngheNghiep, CategoryOptions.ngheNghiep, (v) => setState(() => _ngheNghiep = v)),
+              _ddStr('11. Nghề nghiệp', Icons.work_outline, _ngheNghiep, CategoryOptions.ngheNghiep, (v) => setState(() => _ngheNghiep = v)),
               _tf(_noiLamViecCtrl, '12. Nơi làm việc/học tập', Icons.business_outlined),
               _tf(_diaChiLamViecCtrl, '13. Địa chỉ nơi làm/học', Icons.location_on_outlined),
               _dd('14. Tỉnh nơi làm/học', Icons.map_outlined, _cityIdHoc, CategoryOptions.tinh, (v) => setState(() => _cityIdHoc = v)),
@@ -252,10 +253,10 @@ class _ThemBTNScreenState extends State<ThemBTNScreen> {
 
             // ── 21–33: Điều trị & chẩn đoán ──
             _Sec('Điều trị & Chẩn đoán (21–33)', Icons.local_hospital_outlined, [
-              _tf(_coSoDieuTriCtrl, '21. Cơ sở điều trị', Icons.local_hospital_outlined),
+              _dd('21. Cơ sở điều trị', Icons.local_hospital_outlined, _coSoDieuTri, CategoryOptions.coSoDieuTri, (v) => setState(() => _coSoDieuTri = v)),
               _dd('22. Tỉnh cơ sở điều trị', Icons.map_outlined, _cityIdCSDT, CategoryOptions.tinh, (v) => setState(() => _cityIdCSDT = v)),
               _dd('23. Hình thức điều trị', Icons.health_and_safety_outlined, _hinhThucDieuTri, CategoryOptions.hinhThucDieuTri, (v) => setState(() => _hinhThucDieuTri = v)),
-              _dd('24. Chẩn đoán bệnh', Icons.content_paste_search_outlined, _chanDoanBenh, CategoryOptions.benhTruyenNhiem, (v) => setState(() => _chanDoanBenh = v)),
+              _dd('24. Chẩn đoán bệnh', Icons.content_paste_search_outlined, _chanDoanBenh, CategoryOptions.chanDoanBenh, (v) => setState(() => _chanDoanBenh = v)),
               _dd('25. Phân độ bệnh', Icons.bar_chart_outlined, _phanDoBenh, CategoryOptions.phanDoBenh, (v) => setState(() => _phanDoBenh = v)),
               _dd('26. Thông tin điều trị', Icons.medical_services_outlined, _thongTinDieuTri, CategoryOptions.dieuTri, (v) => setState(() => _thongTinDieuTri = v)),
               _tf(_chanDoanBienChungCtrl, '27. Chẩn đoán biến chứng', Icons.warning_amber_outlined),
@@ -364,7 +365,27 @@ class _ThemBTNScreenState extends State<ThemBTNScreen> {
     );
   }
 
-  Widget _dd(String label, IconData icon, String? value, List<String> items, void Function(String?) onChanged) {
+  /// Dropdown dùng CategoryItem — lưu id+name lên Firestore
+  Widget _dd(String label, IconData icon, CategoryItem? value,
+      List<CategoryItem> items, void Function(CategoryItem?) onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<CategoryItem>(
+        initialValue: value,
+        decoration: _dec(label, icon),
+        isExpanded: true,
+        hint: Text('Chọn...', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+        items: items
+            .map((e) => DropdownMenuItem(value: e, child: Text(e.name, overflow: TextOverflow.ellipsis)))
+            .toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  /// Dropdown dùng String thuần (nghề nghiệp, nhóm máu…)
+  Widget _ddStr(String label, IconData icon, String? value,
+      List<String> items, void Function(String?) onChanged) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
@@ -421,3 +442,5 @@ class _Sec extends StatelessWidget {
     ]),
   );
 }
+
+

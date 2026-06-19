@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/benh_nhan.dart';
 import '../models/category_options.dart';
 import '../services/firestore_service.dart';
@@ -33,24 +33,23 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
   final _coSoDieuTriCtrl = TextEditingController();
 
   // ── Dropdown values ────────────────────────────────────────────────────
-  String? _gioiTinh;
-  String? _danToc;
+  CategoryItem? _gioiTinh;
+  CategoryItem? _danToc;
   String? _ngheNghiep;
   String? _nhomMau;
-  String? _tinh;
-  String? _phuong;
-  String? _benhNen;
-  String? _benhTruyenNhiem;
-  String? _tinhTrangTiemChung;
-  String? _coKhong;
-  String? _dieuTri;
-  String? _hinhThucDieuTri;
-  String? _chanDoanBenh;
-  String? _phanLoaiChanDoan;
-  String? _phanDoBenh;
-  String? _loaiBenhPham;
-  String? _loaiXetNghiem;
-  String? _ketQuaXetNghiem;
+  CategoryItem? _tinh;
+  CategoryItem? _benhNen;
+  CategoryItem? _benhTruyenNhiem;
+  CategoryItem? _tinhTrangTiemChung;
+  CategoryItem? _coKhong;
+  CategoryItem? _dieuTri;
+  CategoryItem? _hinhThucDieuTri;
+  CategoryItem? _chanDoanBenh;
+  CategoryItem? _phanLoaiChanDoan;
+  CategoryItem? _phanDoBenh;
+  CategoryItem? _loaiBenhPham;
+  CategoryItem? _loaiXetNghiem;
+  CategoryItem? _ketQuaXetNghiem;
   String? _trangThai = 'Chờ';
 
   @override
@@ -196,38 +195,31 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
         id: '',
         hoTen: _hoTenCtrl.text.trim(),
         ngaySinh: _ngaySinhCtrl.text.isNotEmpty ? _ngaySinhCtrl.text : null,
-        gioiTinh: _gioiTinh,
-        danToc: _danToc,
+        gioiTinhItem: _gioiTinh,
+        danTocItem: _danToc,
         ngheNghiep: _ngheNghiep,
-        soDienThoai:
-            _soDienThoaiCtrl.text.isNotEmpty ? _soDienThoaiCtrl.text : null,
+        soDienThoai: _soDienThoaiCtrl.text.isNotEmpty ? _soDienThoaiCtrl.text : null,
         cccd: _cccdCtrl.text.isNotEmpty ? _cccdCtrl.text : null,
-        baoHiemYTe:
-            _baoHiemYTeCtrl.text.isNotEmpty ? _baoHiemYTeCtrl.text : null,
+        baoHiemYTe: _baoHiemYTeCtrl.text.isNotEmpty ? _baoHiemYTeCtrl.text : null,
         diaChi: _diaChiCtrl.text.isNotEmpty ? _diaChiCtrl.text : null,
-        tinh: _tinh,
-        phuong: _phuong,
+        tinhItem: _tinh,
         nhomMau: _nhomMau,
-        benhNen: _benhNen,
-        benhTruyenNhiem: _benhTruyenNhiem,
-        tinhTrangTiemChung: _tinhTrangTiemChung,
-        coKhong: _coKhong,
-        dieuTri: _dieuTri,
-        hinhThucDieuTri: _hinhThucDieuTri,
-        chanDoanBenh: _chanDoanBenh,
-        phanLoaiChanDoan: _phanLoaiChanDoan,
-        phanDoBenh: _phanDoBenh,
-        loaiBenhPham: _loaiBenhPham,
-        loaiXetNghiem: _loaiXetNghiem,
-        ketQuaXetNghiem: _ketQuaXetNghiem,
-        coSoBaoCao:
-            _coSoBaoCaoCtrl.text.isNotEmpty ? _coSoBaoCaoCtrl.text : null,
-        donViDieuTra:
-            _donViDieuTraCtrl.text.isNotEmpty ? _donViDieuTraCtrl.text : null,
-        coSoDieuTri:
-            _coSoDieuTriCtrl.text.isNotEmpty ? _coSoDieuTriCtrl.text : null,
-        phongKham:
-            _phongKhamCtrl.text.isNotEmpty ? _phongKhamCtrl.text : null,
+        benhNenItem: _benhNen,
+        benhTruyenNhiemItem: _benhTruyenNhiem,
+        tinhTrangTiemChungItem: _tinhTrangTiemChung,
+        coKhongItem: _coKhong,
+        dieuTriItem: _dieuTri,
+        hinhThucDieuTriItem: _hinhThucDieuTri,
+        chanDoanBenhItem: _chanDoanBenh,
+        phanLoaiChanDoanItem: _phanLoaiChanDoan,
+        phanDoBenhItem: _phanDoBenh,
+        loaiBenhPhamItem: _loaiBenhPham,
+        loaiXetNghiemItem: _loaiXetNghiem,
+        ketQuaXetNghiemItem: _ketQuaXetNghiem,
+        coSoBaoCaoItem: null,
+        donViDieuTra: _donViDieuTraCtrl.text.isNotEmpty ? _donViDieuTraCtrl.text : null,
+        coSoDieuTriItem: null,
+        phongKham: _phongKhamCtrl.text.isNotEmpty ? _phongKhamCtrl.text : null,
         trangThai: _trangThai,
       );
 
@@ -475,7 +467,7 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
                   items: CategoryOptions.danToc,
                   onChanged: (v) => setState(() => _danToc = v),
                 ),
-                _buildDropdown(
+                _buildDropdownStr(
                   label: 'Nghề nghiệp',
                   icon: Icons.work_outline,
                   value: _ngheNghiep,
@@ -540,7 +532,7 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
               title: 'Thông tin y tế',
               icon: Icons.medical_information_outlined,
               children: [
-                _buildDropdown(
+                _buildDropdownStr(
                   label: 'Nhóm máu',
                   icon: Icons.bloodtype_outlined,
                   value: _nhomMau,
@@ -558,7 +550,7 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
                   label: 'Bệnh truyền nhiễm',
                   icon: Icons.coronavirus_outlined,
                   value: _benhTruyenNhiem,
-                  items: CategoryOptions.benhTruyenNhiem,
+                  items: CategoryOptions.chanDoanBenh,
                   onChanged: (v) => setState(() => _benhTruyenNhiem = v),
                 ),
                 _buildDropdown(
@@ -588,7 +580,7 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
                   label: 'Chẩn đoán bệnh',
                   icon: Icons.content_paste_search_outlined,
                   value: _chanDoanBenh,
-                  items: CategoryOptions.benhTruyenNhiem,
+                  items: CategoryOptions.chanDoanBenh,
                   onChanged: (v) => setState(() => _chanDoanBenh = v),
                 ),
                 _buildDropdown(
@@ -687,7 +679,7 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
               title: 'Trạng thái khám',
               icon: Icons.info_outline,
               children: [
-                _buildDropdown(
+                _buildDropdownStr(
                   label: 'Trạng thái',
                   icon: Icons.pending_actions_outlined,
                   value: _trangThai,
@@ -803,6 +795,49 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
   Widget _buildDropdown({
     required String label,
     required IconData icon,
+    required CategoryItem? value,
+    required List<CategoryItem> items,
+    required void Function(CategoryItem?) onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<CategoryItem>(
+        initialValue: value,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, size: 20, color: Colors.grey.shade500),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF1565C0), width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        ),
+        isExpanded: true,
+        hint: Text('Chọn $label',
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+        items: items
+            .map((e) => DropdownMenuItem(
+                value: e,
+                child: Text(e.name, overflow: TextOverflow.ellipsis)))
+            .toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _buildDropdownStr({
+    required String label,
+    required IconData icon,
     required String? value,
     required List<String> items,
     required void Function(String?) onChanged,
@@ -826,11 +861,9 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide:
-                const BorderSide(color: Color(0xFF1565C0), width: 1.5),
+            borderSide: const BorderSide(color: Color(0xFF1565C0), width: 1.5),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         ),
         isExpanded: true,
         hint: Text('Chọn $label',
@@ -842,7 +875,7 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
       ),
     );
   }
-}
+} // end _ThemBenhNhanScreenState
 
 // ── Section widget ──────────────────────────────────────────────────────────
 class _FormSection extends StatelessWidget {
@@ -973,3 +1006,5 @@ class _BannerCanhBao extends StatelessWidget {
     );
   }
 }
+
+
