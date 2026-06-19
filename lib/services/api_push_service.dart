@@ -117,8 +117,138 @@ class ApiPushService {
       return null;
     }
   }
+
+  /// Lấy dữ liệu bệnh nhân đã chọn từ server theo ids
+  /// → POST /api/benhNhan/byIds  { ids: [...] }
+  /// Trả về list dữ liệu từ server (đã qua API)
+  Future<LayDuLieuKetQua> layBenhNhanDaChon(
+      String token, List<String> ids) async {
+    try {
+      final resp = await http.post(
+        Uri.parse('$_baseUrl/api/benhNhan/byIds'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'ids': ids}),
+      ).timeout(const Duration(seconds: 30));
+
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (resp.statusCode == 200 && body['success'] == true) {
+        final data = (body['data'] as List?)
+            ?.map((e) => e as Map<String, dynamic>)
+            .toList() ?? [];
+        return LayDuLieuKetQua(
+          success: true,
+          total: body['total'] as int? ?? data.length,
+          data: data,
+        );
+      }
+      return LayDuLieuKetQua(
+        success: false,
+        message: body['message'] as String? ?? 'Lỗi ${resp.statusCode}',
+      );
+    } catch (e) {
+      return LayDuLieuKetQua(success: false, message: e.toString());
+    }
+  }
+
+  /// Lấy dữ liệu ca bệnh TN đã chọn từ server theo ids
+  /// → POST /api/benhTruyenNhiem/byIds  { ids: [...] }
+  Future<LayDuLieuKetQua> layBTNDaChon(
+      String token, List<String> ids) async {
+    try {
+      final resp = await http.post(
+        Uri.parse('$_baseUrl/api/benhTruyenNhiem/byIds'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'ids': ids}),
+      ).timeout(const Duration(seconds: 30));
+
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (resp.statusCode == 200 && body['success'] == true) {
+        final data = (body['data'] as List?)
+            ?.map((e) => e as Map<String, dynamic>)
+            .toList() ?? [];
+        return LayDuLieuKetQua(
+          success: true,
+          total: body['total'] as int? ?? data.length,
+          data: data,
+        );
+      }
+      return LayDuLieuKetQua(
+        success: false,
+        message: body['message'] as String? ?? 'Lỗi ${resp.statusCode}',
+      );
+    } catch (e) {
+      return LayDuLieuKetQua(success: false, message: e.toString());
+    }
+  }
+
+  /// Lấy tất cả bệnh nhân
+  /// → GET /api/benhNhan/tatca
+  Future<LayDuLieuKetQua> layTatCaBenhNhan(String token) async {
+    try {
+      final resp = await http.get(
+        Uri.parse('$_baseUrl/api/benhNhan/tatca'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 30));
+
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (resp.statusCode == 200 && body['success'] == true) {
+        final data = (body['data'] as List?)
+            ?.map((e) => e as Map<String, dynamic>)
+            .toList() ?? [];
+        return LayDuLieuKetQua(
+          success: true,
+          total: body['total'] as int? ?? data.length,
+          data: data,
+        );
+      }
+      return LayDuLieuKetQua(
+        success: false,
+        message: body['message'] as String? ?? 'Lỗi ${resp.statusCode}',
+      );
+    } catch (e) {
+      return LayDuLieuKetQua(success: false, message: e.toString());
+    }
+  }
+
+  /// Lấy tất cả bệnh truyền nhiễm
+  /// → GET /api/benhTruyenNhiem/tatca
+  Future<LayDuLieuKetQua> layTatCaBTN(String token) async {
+    try {
+      final resp = await http.get(
+        Uri.parse('$_baseUrl/api/benhTruyenNhiem/tatca'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 30));
+
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (resp.statusCode == 200 && body['success'] == true) {
+        final data = (body['data'] as List?)
+            ?.map((e) => e as Map<String, dynamic>)
+            .toList() ?? [];
+        return LayDuLieuKetQua(
+          success: true,
+          total: body['total'] as int? ?? data.length,
+          data: data,
+        );
+      }
+      return LayDuLieuKetQua(
+        success: false,
+        message: body['message'] as String? ?? 'Lỗi ${resp.statusCode}',
+      );
+    } catch (e) {
+      return LayDuLieuKetQua(success: false, message: e.toString());
+    }
+  }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Kết quả đẩy từng bản ghi
+// ═══════════════════════════════════════════════════════════════════════════
 class PushKetQua {
   final String id;
   final String hoTen;
@@ -135,4 +265,21 @@ class PushKetQua {
   });
 
   bool get isOk => status == ApiPushService.ok;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Kết quả khi lấy dữ liệu từ server
+// ═══════════════════════════════════════════════════════════════════════════
+class LayDuLieuKetQua {
+  final bool success;
+  final int total;
+  final List<Map<String, dynamic>> data;
+  final String? message;
+
+  const LayDuLieuKetQua({
+    required this.success,
+    this.total = 0,
+    this.data = const [],
+    this.message,
+  });
 }

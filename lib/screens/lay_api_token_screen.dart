@@ -39,6 +39,14 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
   String? _expiresIn;
   String? _loi;
 
+  // ── Kết quả test API byIds → tạo data token ──────────────────────────────────
+  bool _testingBN  = false;
+  bool _testingBTN = false;
+  String? _dataTokenBN;   // Token dữ liệu từ POST byIds
+  String? _dataTokenBTN;
+  Map<String, dynamic>? _testResultBN;
+  Map<String, dynamic>? _testResultBTN;
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +59,111 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
     _mkCtrl.dispose();
     _tabCtrl.dispose();
     super.dispose();
+  }
+
+  /// Gọi POST /byIds → tạo token → lưu token để lấy dữ liệu sau
+  Future<void> _testBenhNhanByIds() async {
+    if (_token == null || widget.selectedBenhNhan.isEmpty) return;
+    setState(() { _testingBN = true; _testResultBN = null; _dataTokenBN = null; });
+    try {
+      final bnIds = widget.selectedBenhNhan.map((e) => e.id).toList();
+      final resp = await http.post(
+        Uri.parse('$_apiBaseUrl/api/benhNhan/byIds'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+        body: jsonEncode({
+          'benhNhanIds': bnIds,
+          'benhTNIds': [],
+        }),
+      ).timeout(const Duration(seconds: 30));
+      
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      setState(() {
+        _testResultBN = body;
+        if (body['success'] == true && body['token'] != null) {
+          _dataTokenBN = body['token'] as String;
+        }
+      });
+    } catch (e) {
+      setState(() => _testResultBN = {'success': false, 'message': e.toString()});
+    } finally {
+      setState(() => _testingBN = false);
+    }
+  }
+
+  /// Lấy dữ liệu bằng data token
+  Future<void> _getDuLieuByToken(String dataToken, bool isBenhNhan) async {
+    if (_token == null) return;
+    if (isBenhNhan) {
+      setState(() { _testingBN = true; });
+    } else {
+      setState(() { _testingBTN = true; });
+    }
+    
+    try {
+      final endpoint = isBenhNhan 
+          ? '$_apiBaseUrl/api/benhNhan/token/$dataToken'
+          : '$_apiBaseUrl/api/benhTruyenNhiem/token/$dataToken';
+      
+      final resp = await http.get(
+        Uri.parse(endpoint),
+        headers: {'Authorization': 'Bearer $_token'},
+      ).timeout(const Duration(seconds: 30));
+      
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      
+      if (isBenhNhan) {
+        setState(() => _testResultBN = body);
+      } else {
+        setState(() => _testResultBTN = body);
+      }
+    } catch (e) {
+      final error = {'success': false, 'message': e.toString()};
+      if (isBenhNhan) {
+        setState(() => _testResultBN = error);
+      } else {
+        setState(() => _testResultBTN = error);
+      }
+    } finally {
+      if (isBenhNhan) {
+        setState(() => _testingBN = false);
+      } else {
+        setState(() => _testingBTN = false);
+      }
+    }
+  }
+
+  Future<void> _testBTNByIds() async {
+    if (_token == null || widget.selectedBTN.isEmpty) return;
+    setState(() { _testingBTN = true; _testResultBTN = null; _dataTokenBTN = null; });
+    try {
+      final btnIds = widget.selectedBTN.map((e) => e.id).toList();
+      final resp = await http.post(
+        Uri.parse('$_apiBaseUrl/api/benhTruyenNhiem/byIds'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+        body: jsonEncode({
+          'benhNhanIds': [],
+          'benhTNIds': btnIds,
+        }),
+      ).timeout(const Duration(seconds: 30));
+      
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      setState(() {
+        _testResultBTN = body;
+        if (body['success'] == true && body['token'] != null) {
+          _dataTokenBTN = body['token'] as String;
+        }
+      });
+    } catch (e) {
+      setState(() => _testResultBTN = {'success': false, 'message': e.toString()});
+    } finally {
+      setState(() => _testingBTN = false);
+    }
   }
 
   Future<void> _layToken() async {
@@ -358,14 +471,19 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
   Widget _buildBenhNhanRequests() {
     final hasSel = widget.selectedBenhNhan.isNotEmpty;
     final ids = widget.selectedBenhNhan.map((e) => e.id).toList();
-    final bodyJson = jsonEncode({'ids': ids});
+    final bodyJson = jsonEncode({'benhNhanIds': ids, 'benhTNIds': []});
     final url = '$_apiBaseUrl/api/benhNhan/byIds';
-    final curlSelected = 'curl -X POST "$url" \\\n'
+    
+    final curlCreateToken = 'curl -X POST "$url" \\\n'
         '  -H "Authorization: Bearer ${_token!}" \\\n'
         '  -H "Content-Type: application/json" \\\n'
         "  -d '$bodyJson'";
-    final curlAll = 'curl -X GET "$_apiBaseUrl/api/benhNhan/tatca" \\\n'
-        '  -H "Authorization: Bearer ${_token!}"';
+    
+    final curlGetByToken = _dataTokenBN != null
+        ? 'curl -X GET "$_apiBaseUrl/api/benhNhan/token/$_dataTokenBN" \\\n'
+          '  -H "Authorization: Bearer ${_token!}"'
+        : null;
+    
     final curlPush = 'curl -X POST "$_apiBaseUrl/api/benhNhan/push" \\\n'
         '  -H "Authorization: Bearer ${_token!}" \\\n'
         '  -H "Content-Type: application/json" \\\n'
@@ -375,20 +493,19 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
       padding: const EdgeInsets.all(12),
       children: [
 
-        // ── 1. POST byIds — xem dữ liệu đã chọn ──────────────────────────
+        // ── 1. POST byIds — tạo token dữ liệu ─────────────────────────────
         _RequestCard(
           badge: '1',
           method: 'POST',
           endpoint: '/api/benhNhan/byIds',
           badgeColor: const Color(0xFF1565C0),
-          title: 'Xem bệnh nhân đã chọn',
+          title: 'Tạo token dữ liệu từ IDs đã chọn',
           description: hasSel
-              ? '${widget.selectedBenhNhan.length} bệnh nhân được chọn'
+              ? '${widget.selectedBenhNhan.length} bệnh nhân → tạo token'
               : 'Chưa chọn bệnh nhân nào',
-          curl: hasSel ? curlSelected : null,
+          curl: hasSel ? curlCreateToken : null,
           body: hasSel ? bodyJson : null,
           onCopy: _copy,
-          // Danh sách tên bệnh nhân đã chọn
           patients: hasSel
               ? widget.selectedBenhNhan.map((bn) =>
                   '${bn.hoTen}'
@@ -398,13 +515,36 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
                 .toList()
               : null,
           emptyHint: 'Vào "Đẩy dữ liệu" → tick chọn bệnh nhân → nhấn 🔑',
+          onTest: hasSel ? _testBenhNhanByIds : null,
+          testing: _testingBN,
+          testResult: _testResultBN,
+          onCopyResult: (text) => _copy(text, 'kết quả'),
+          dataToken: _dataTokenBN,
         ),
         const SizedBox(height: 12),
 
-        // ── 2. POST push — cập nhật bệnh nhân đã chọn ────────────────────
-        if (hasSel) ...[
+        // ── 2. GET token/:token — lấy dữ liệu bằng token ──────────────────
+        if (_dataTokenBN != null) ...[
           _RequestCard(
             badge: '2',
+            method: 'GET',
+            endpoint: '/api/benhNhan/token/:token',
+            badgeColor: Colors.green.shade700,
+            title: 'Lấy dữ liệu bằng data token',
+            description: 'Sử dụng token từ bước 1 để lấy dữ liệu đã chọn',
+            curl: curlGetByToken,
+            onCopy: _copy,
+            onTest: () => _getDuLieuByToken(_dataTokenBN!, true),
+            testing: _testingBN,
+            dataToken: _dataTokenBN,
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── 3. POST push — cập nhật bệnh nhân đã chọn ────────────────────
+        if (hasSel) ...[
+          _RequestCard(
+            badge: '3',
             method: 'POST',
             endpoint: '/api/benhNhan/push',
             badgeColor: Colors.orange.shade700,
@@ -415,18 +555,6 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
           ),
           const SizedBox(height: 12),
         ],
-
-        // ── 3. GET tatca — tất cả bệnh nhân ──────────────────────────────
-        _RequestCard(
-          badge: '3',
-          method: 'GET',
-          endpoint: '/api/benhNhan/tatca',
-          badgeColor: Colors.teal.shade700,
-          title: 'Xem tất cả bệnh nhân',
-          description: 'Trả về toàn bộ danh sách bệnh nhân trong hệ thống',
-          curl: curlAll,
-          onCopy: _copy,
-        ),
       ],
     );
   }
@@ -435,14 +563,19 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
   Widget _buildBTNRequests() {
     final hasSel = widget.selectedBTN.isNotEmpty;
     final ids = widget.selectedBTN.map((e) => e.id).toList();
-    final bodyJson = jsonEncode({'ids': ids});
+    final bodyJson = jsonEncode({'benhNhanIds': [], 'benhTNIds': ids});
     final url = '$_apiBaseUrl/api/benhTruyenNhiem/byIds';
-    final curlSelected = 'curl -X POST "$url" \\\n'
+    
+    final curlCreateToken = 'curl -X POST "$url" \\\n'
         '  -H "Authorization: Bearer ${_token!}" \\\n'
         '  -H "Content-Type: application/json" \\\n'
         "  -d '$bodyJson'";
-    final curlAll = 'curl -X GET "$_apiBaseUrl/api/benhTruyenNhiem/tatca" \\\n'
-        '  -H "Authorization: Bearer ${_token!}"';
+    
+    final curlGetByToken = _dataTokenBTN != null
+        ? 'curl -X GET "$_apiBaseUrl/api/benhTruyenNhiem/token/$_dataTokenBTN" \\\n'
+          '  -H "Authorization: Bearer ${_token!}"'
+        : null;
+    
     final curlPush = 'curl -X POST "$_apiBaseUrl/api/benhTruyenNhiem/push" \\\n'
         '  -H "Authorization: Bearer ${_token!}" \\\n'
         '  -H "Content-Type: application/json" \\\n'
@@ -452,17 +585,17 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
       padding: const EdgeInsets.all(12),
       children: [
 
-        // ── 1. POST byIds — xem ca đã chọn ───────────────────────────────
+        // ── 1. POST byIds — tạo token dữ liệu ─────────────────────────────
         _RequestCard(
           badge: '1',
           method: 'POST',
           endpoint: '/api/benhTruyenNhiem/byIds',
           badgeColor: const Color(0xFF2E7D32),
-          title: 'Xem ca bệnh TN đã chọn',
+          title: 'Tạo token dữ liệu từ IDs đã chọn',
           description: hasSel
-              ? '${widget.selectedBTN.length} ca bệnh được chọn'
+              ? '${widget.selectedBTN.length} ca bệnh → tạo token'
               : 'Chưa chọn ca bệnh nào',
-          curl: hasSel ? curlSelected : null,
+          curl: hasSel ? curlCreateToken : null,
           body: hasSel ? bodyJson : null,
           onCopy: _copy,
           patients: hasSel
@@ -475,13 +608,36 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
                 .toList()
               : null,
           emptyHint: 'Vào "Đẩy dữ liệu" → tick chọn ca bệnh → nhấn 🔑',
+          onTest: hasSel ? _testBTNByIds : null,
+          testing: _testingBTN,
+          testResult: _testResultBTN,
+          onCopyResult: (text) => _copy(text, 'kết quả'),
+          dataToken: _dataTokenBTN,
         ),
         const SizedBox(height: 12),
 
-        // ── 2. POST push — cập nhật ca bệnh đã chọn ──────────────────────
-        if (hasSel) ...[
+        // ── 2. GET token/:token — lấy dữ liệu bằng token ──────────────────
+        if (_dataTokenBTN != null) ...[
           _RequestCard(
             badge: '2',
+            method: 'GET',
+            endpoint: '/api/benhTruyenNhiem/token/:token',
+            badgeColor: Colors.green.shade700,
+            title: 'Lấy dữ liệu bằng data token',
+            description: 'Sử dụng token từ bước 1 để lấy dữ liệu đã chọn',
+            curl: curlGetByToken,
+            onCopy: _copy,
+            onTest: () => _getDuLieuByToken(_dataTokenBTN!, false),
+            testing: _testingBTN,
+            dataToken: _dataTokenBTN,
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── 3. POST push — cập nhật ca bệnh đã chọn ──────────────────────
+        if (hasSel) ...[
+          _RequestCard(
+            badge: '3',
             method: 'POST',
             endpoint: '/api/benhTruyenNhiem/push',
             badgeColor: Colors.orange.shade700,
@@ -492,18 +648,6 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
           ),
           const SizedBox(height: 12),
         ],
-
-        // ── 3. GET tatca — tất cả ca bệnh ─────────────────────────────────
-        _RequestCard(
-          badge: '3',
-          method: 'GET',
-          endpoint: '/api/benhTruyenNhiem/tatca',
-          badgeColor: Colors.teal.shade700,
-          title: 'Xem tất cả ca bệnh TN',
-          description: 'Trả về toàn bộ ca bệnh truyền nhiễm trong hệ thống',
-          curl: curlAll,
-          onCopy: _copy,
-        ),
       ],
     );
   }
@@ -536,12 +680,20 @@ class _RequestCard extends StatelessWidget {
   final List<String>? patients;
   final String? emptyHint;
   final void Function(String, String) onCopy;
+  // Test API trực tiếp
+  final VoidCallback? onTest;
+  final bool testing;
+  final Map<String, dynamic>? testResult;
+  final void Function(String)? onCopyResult;
+  final String? dataToken; // Token dữ liệu
 
   const _RequestCard({
     required this.badge, required this.method, required this.endpoint,
     required this.badgeColor, required this.title, required this.description,
     required this.onCopy,
     this.curl, this.body, this.patients, this.emptyHint,
+    this.onTest, this.testing = false, this.testResult, this.onCopyResult,
+    this.dataToken,
   });
 
   Color get _methodColor {
@@ -664,6 +816,65 @@ class _RequestCard extends StatelessWidget {
                     fontSize: 10, height: 1.4)),
               ),
             ],
+            
+            // Data Token hiển thị
+            if (dataToken != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade300),
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Icon(Icons.token, color: Colors.green.shade700, size: 14),
+                    const SizedBox(width: 6),
+                    Text('Data Token:', style: TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.bold,
+                        color: Colors.green.shade800)),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => onCopy(dataToken!, 'data token'),
+                      child: Row(children: [
+                        Icon(Icons.copy, size: 12, color: Colors.green.shade600),
+                        const SizedBox(width: 3),
+                        Text('Copy', style: TextStyle(
+                            fontSize: 10, color: Colors.green.shade700)),
+                      ]),
+                    ),
+                  ]),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A2E),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: SelectableText(
+                      dataToken!,
+                      style: const TextStyle(
+                        color: Color(0xFF00FF88),
+                        fontFamily: 'monospace',
+                        fontSize: 9,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Sử dụng token này để lấy dữ liệu đã chọn (hết hạn sau 24h)',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.green.shade700,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ]),
+              ),
+            ],
+            
             // cURL
             if (curl != null) ...[
               const SizedBox(height: 8),
@@ -693,8 +904,184 @@ class _RequestCard extends StatelessWidget {
                 ),
               ),
             ],
+
+            // ── Nút Test API ngay ──────────────────────────────────────────
+            if (onTest != null) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 40,
+                child: ElevatedButton.icon(
+                  onPressed: testing ? null : onTest,
+                  icon: testing
+                      ? const SizedBox(width: 16, height: 16,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.play_arrow_rounded, size: 18),
+                  label: Text(testing ? 'Đang gọi API...' : 'Test API ngay',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: badgeColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+
+            // ── Kết quả từ server ──────────────────────────────────────────
+            if (testResult != null) ...[
+              const SizedBox(height: 10),
+              _TestResultBox(result: testResult!, onCopy: onCopyResult),
+            ],
+
             const SizedBox(height: 10),
           ]),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Hiển thị kết quả test từ server ──────────────────────────────────────────
+class _TestResultBox extends StatelessWidget {
+  final Map<String, dynamic> result;
+  final void Function(String)? onCopy;
+  const _TestResultBox({required this.result, this.onCopy});
+
+  @override
+  Widget build(BuildContext context) {
+    final success = result['success'] == true;
+    final msg     = result['message'] as String?;
+    final prettyJson = const JsonEncoder.withIndent('  ').convert(result);
+    
+    // Xử lý response có token (từ POST byIds)
+    final token = result['token'] as String?;
+    final summary = result['summary'] as Map<String, dynamic>?;
+    
+    // Xử lý response có data (từ GET token/:token)
+    final dataMap = result['data'] as Map<String, dynamic>?;
+    final benhNhanList = dataMap?['benhNhan'] as List?;
+    final benhTNList = dataMap?['benhTruyenNhiem'] as List?;
+    final totalFromSummary = result['summary'] != null 
+        ? (summary!['total'] as int? ?? 0)
+        : (result['total'] as int? ?? 0);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: success ? Colors.green.shade50 : Colors.red.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+            color: success ? Colors.green.shade300 : Colors.red.shade300),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+          child: Row(children: [
+            Icon(success ? Icons.check_circle : Icons.error_outline,
+                size: 16, color: success ? Colors.green.shade700 : Colors.red.shade700),
+            const SizedBox(width: 6),
+            Expanded(child: Text(
+              success 
+                  ? (token != null 
+                      ? 'Token đã tạo · ${summary?['benhNhanCount'] ?? 0} BN · ${summary?['benhTNCount'] ?? 0} BTN'
+                      : 'Server trả về $totalFromSummary bản ghi')
+                  : 'Lỗi: ${msg ?? "Unknown"}',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12,
+                  color: success ? Colors.green.shade800 : Colors.red.shade800),
+            )),
+            GestureDetector(
+              onTap: () => onCopy?.call(prettyJson),
+              child: Row(children: [
+                Icon(Icons.copy, size: 13,
+                    color: success ? Colors.green.shade600 : Colors.red.shade600),
+                const SizedBox(width: 3),
+                Text('Copy JSON', style: TextStyle(fontSize: 10,
+                    color: success ? Colors.green.shade700 : Colors.red.shade700)),
+              ]),
+            ),
+          ]),
+        ),
+        
+        // Hiển thị danh sách bệnh nhân nếu có
+        if (success && benhNhanList != null && benhNhanList.isNotEmpty) ...[
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 6, 10, 4),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Bệnh nhân (${benhNhanList.length}):', 
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
+                      color: Colors.green.shade800)),
+              const SizedBox(height: 4),
+              ...benhNhanList.take(5).map((item) {
+                final m = item as Map<String, dynamic>;
+                final name = m['hoTen'] as String? ?? '—';
+                final ns   = m['ngaySinh'] as String?;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 3),
+                  child: Row(children: [
+                    Icon(Icons.person, size: 11, color: Colors.green.shade600),
+                    const SizedBox(width: 5),
+                    Expanded(child: Text('$name${ns != null ? " · $ns" : ""}',
+                        style: TextStyle(fontSize: 11, color: Colors.green.shade900))),
+                  ]),
+                );
+              }).toList(),
+              if (benhNhanList.length > 5)
+                Padding(padding: const EdgeInsets.only(top: 2),
+                  child: Text('... và ${benhNhanList.length - 5} bệnh nhân khác',
+                      style: TextStyle(fontSize: 10, color: Colors.green.shade700,
+                          fontStyle: FontStyle.italic))),
+            ]),
+          ),
+        ],
+        
+        // Hiển thị danh sách bệnh truyền nhiễm nếu có
+        if (success && benhTNList != null && benhTNList.isNotEmpty) ...[
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 6, 10, 4),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Bệnh truyền nhiễm (${benhTNList.length}):', 
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
+                      color: Colors.green.shade800)),
+              const SizedBox(height: 4),
+              ...benhTNList.take(5).map((item) {
+                final m = item as Map<String, dynamic>;
+                final name = m['hoTen'] as String? ?? '—';
+                final benh = m['chanDoanBenh'] as String?;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 3),
+                  child: Row(children: [
+                    Icon(Icons.coronavirus, size: 11, color: Colors.green.shade600),
+                    const SizedBox(width: 5),
+                    Expanded(child: Text('$name${benh != null ? " · $benh" : ""}',
+                        style: TextStyle(fontSize: 11, color: Colors.green.shade900))),
+                  ]),
+                );
+              }).toList(),
+              if (benhTNList.length > 5)
+                Padding(padding: const EdgeInsets.only(top: 2),
+                  child: Text('... và ${benhTNList.length - 5} ca bệnh khác',
+                      style: TextStyle(fontSize: 10, color: Colors.green.shade700,
+                          fontStyle: FontStyle.italic))),
+            ]),
+          ),
+        ],
+        
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
+          child: GestureDetector(
+            onTap: () => onCopy?.call(prettyJson),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: const Color(0xFF1A1A2E),
+                  borderRadius: BorderRadius.circular(6)),
+              child: Text(
+                prettyJson.length > 300 ? '${prettyJson.substring(0, 300)}...' : prettyJson,
+                style: const TextStyle(color: Color(0xFF00FF88),
+                    fontFamily: 'monospace', fontSize: 9.5, height: 1.4)),
+            ),
+          ),
         ),
       ]),
     );

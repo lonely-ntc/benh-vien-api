@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "migrate:ids": "node migrate_ids.js",
+    "migrate:benh-nhan-id": "node migrate_benh_nhan_id.js"
   },
   "engines": { "node": ">=18" },
   "dependencies": {

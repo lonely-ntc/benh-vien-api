@@ -10,6 +10,7 @@ class BenhNhan {
 
   // ── Thông tin cá nhân ──────────────────────────────────────────────────
   final String hoTen;
+  final String? benhNhanId;             // Mã bệnh nhân (BN001, BN002, ...)
   final String? ngaySinh;               // "dd/MM/yyyy"
   final CategoryItem? gioiTinhItem;     // GioiTinh — lưu {id,name}
   final CategoryItem? danTocItem;       // DanToc   — lưu {id,name}
@@ -56,6 +57,7 @@ class BenhNhan {
   const BenhNhan({
     required this.id,
     required this.hoTen,
+    this.benhNhanId,
     this.ngaySinh,
     this.gioiTinhItem,
     this.danTocItem,
@@ -119,6 +121,7 @@ class BenhNhan {
     return BenhNhan(
       id: docId,
       hoTen: data['hoTen'] ?? '',
+      benhNhanId: data['benhNhanId'],
       ngaySinh: data['ngaySinh'],
       gioiTinhItem:           cat(data['gioiTinh'],           CategoryOptions.gioiTinh),
       danTocItem:             cat(data['danToc'],             CategoryOptions.danToc),
@@ -158,6 +161,7 @@ class BenhNhan {
   Map<String, dynamic> toFirestore() {
     return {
       'hoTen': hoTen,
+      if (benhNhanId != null)  'benhNhanId': benhNhanId,
       if (ngaySinh != null)    'ngaySinh': ngaySinh,
       if (gioiTinhItem != null)           'gioiTinh':           gioiTinhItem!.toMap(),
       if (danTocItem != null)             'danToc':             danTocItem!.toMap(),
@@ -199,7 +203,7 @@ class BenhNhan {
   Map<String, dynamic> toApiPayload() => {
     'Id':                   null,
     'UnitId':               null,
-    'MaBenhNhan':           cccd ?? '',
+    'MaBenhNhan':           benhNhanId ?? cccd ?? '',
     'HoTen':                hoTen,
     'NgaySinh':             ngaySinh,
     'GioiTinh':             gioiTinhItem?.id.toString(),
