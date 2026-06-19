@@ -72,8 +72,32 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * GET /api/tatcaBenhNhan
- * Lấy toàn bộ bệnh nhân không phân trang (dùng để export/xem tất cả)
+ * POST /api/benhNhan/byIds
+ * Body: { ids: ['id1','id2',...] }
+ * Trả về dữ liệu của đúng những bệnh nhân có id trong danh sách
+ */
+router.post('/byIds', async (req, res) => {
+  try {
+    const ids = req.body?.ids;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'Cần truyền mảng ids.' });
+    }
+    const chunks = [];
+    for (let i = 0; i < ids.length; i += 30) chunks.push(ids.slice(i, i + 30));
+    const allDocs = [];
+    for (const chunk of chunks) {
+      const snap = await db.collection('benhNhan').where('__name__', 'in', chunk).get();
+      snap.docs.forEach(d => allDocs.push({ id: d.id, ...sanitize(d.data()) }));
+    }
+    res.json({ success: true, total: allDocs.length, data: allDocs });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+/**
+ * GET /api/benhNhan/tatca
+ * Lấy toàn bộ bệnh nhân không phân trang
  */
 router.get('/tatca', async (req, res) => {
   try {

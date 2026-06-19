@@ -76,10 +76,27 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * GET /api/benhTruyenNhiem/tatca
- * Lấy toàn bộ ca bệnh truyền nhiễm không phân trang
+ * POST /api/benhTruyenNhiem/byIds
+ * Body: { ids: ['id1','id2',...] }
  */
-router.get('/tatca', async (req, res) => {
+router.post('/byIds', async (req, res) => {
+  try {
+    const ids = req.body?.ids;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'Cần truyền mảng ids.' });
+    }
+    const chunks = [];
+    for (let i = 0; i < ids.length; i += 30) chunks.push(ids.slice(i, i + 30));
+    const allDocs = [];
+    for (const chunk of chunks) {
+      const snap = await db.collection('benhTruyenNhiem').where('__name__', 'in', chunk).get();
+      snap.docs.forEach(d => allDocs.push({ id: d.id, ...sanitize(d.data()) }));
+    }
+    res.json({ success: true, total: allDocs.length, data: allDocs });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
   try {
     const snap = await db.collection('benhTruyenNhiem').orderBy('ngayTao', 'desc').get();
     const data = snap.docs.map(d => ({ id: d.id, ...sanitize(d.data()) }));
