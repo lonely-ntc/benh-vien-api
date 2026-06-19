@@ -3,6 +3,7 @@ import { db } from '../firebase.js';
 import { sanitize, getPageSize } from '../utils.js';
 import { requireAuth } from '../auth.js';
 import { tokenStore } from '../tokenStore.js';
+import { formatBenhNhanToAPI, formatBenhTNToAPI } from '../formatters.js';
 
 const router = Router();
 
@@ -180,12 +181,23 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * GET /api/benhNhan/token/:token
- * Lấy dữ liệu bệnh nhân và bệnh truyền nhiễm theo token đã tạo
+ * GET /api/benhNhan/thongtinbenhnhan
+ * Query: token=xxx (data token từ POST /byIds)
+ * Lấy thông tin bệnh nhân đã chọn theo data token
+ * Format: Chuẩn API với ID cho danh mục, text cho thông tin cá nhân
  */
-router.get('/token/:token', async (req, res) => {
+router.get('/thongtinbenhnhan', async (req, res) => {
   try {
-    const tokenData = tokenStore.get(req.params.token);
+    const dataToken = req.query.token;
+    
+    if (!dataToken) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cần truyền token trong query parameter (?token=xxx)' 
+      });
+    }
+    
+    const tokenData = tokenStore.get(dataToken);
     
     if (!tokenData) {
       return res.status(404).json({ 
@@ -196,37 +208,47 @@ router.get('/token/:token', async (req, res) => {
 
     const { benhNhanIds = [], benhTNIds = [] } = tokenData;
 
-    // Lấy dữ liệu bệnh nhân
+    // Lấy dữ liệu bệnh nhân theo benhNhanId
     const benhNhanData = [];
     if (benhNhanIds.length > 0) {
       const chunks = [];
-      for (let i = 0; i < benhNhanIds.length; i += 30) {
-        chunks.push(benhNhanIds.slice(i, i + 30));
+      for (let i = 0; i < benhNhanIds.length; i += 10) {
+        chunks.push(benhNhanIds.slice(i, i + 10));
       }
       
       for (const chunk of chunks) {
-        const snap = await db.collection('benhNhan').where('__name__', 'in', chunk).get();
-        snap.docs.forEach(d => benhNhanData.push({ id: d.id, ...sanitize(d.data()) }));
+        const snap = await db.collection('benhNhan')
+          .where('benhNhanId', 'in', chunk)
+          .get();
+        snap.docs.forEach(d => {
+          const data = d.data();
+          benhNhanData.push(formatBenhNhanToAPI(data));
+        });
       }
     }
 
-    // Lấy dữ liệu bệnh truyền nhiễm
+    // Lấy dữ liệu bệnh truyền nhiễm theo benhAnId (nếu có)
     const benhTNData = [];
     if (benhTNIds.length > 0) {
       const chunks = [];
-      for (let i = 0; i < benhTNIds.length; i += 30) {
-        chunks.push(benhTNIds.slice(i, i + 30));
+      for (let i = 0; i < benhTNIds.length; i += 10) {
+        chunks.push(benhTNIds.slice(i, i + 10));
       }
       
       for (const chunk of chunks) {
-        const snap = await db.collection('benhTruyenNhiem').where('__name__', 'in', chunk).get();
-        snap.docs.forEach(d => benhTNData.push({ id: d.id, ...sanitize(d.data()) }));
+        const snap = await db.collection('benhTruyenNhiem')
+          .where('benhAnId', 'in', chunk)
+          .get();
+        snap.docs.forEach(d => {
+          const data = d.data();
+          benhTNData.push(formatBenhTNToAPI(data));
+        });
       }
     }
 
     res.json({ 
       success: true,
-      token: req.params.token,
+      token: dataToken,
       timestamp: tokenData.timestamp,
       data: {
         benhNhan: benhNhanData,
@@ -236,32 +258,11 @@ router.get('/token/:token', async (req, res) => {
         benhNhanCount: benhNhanData.length,
         benhTNCount: benhTNData.length,
         total: benhNhanData.length + benhTNData.length,
+        requestedBenhNhan: benhNhanIds.length,
+        requestedBenhTN: benhTNIds.length,
+        notFoundBenhNhan: benhNhanIds.length - benhNhanData.length,
+        notFoundBenhTN: benhTNIds.length - benhTNData.length,
       }
-    });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
-});
-
-/**
- * GET /api/benhNhan/token/:token/info
- * Lấy thông tin về token (không lấy dữ liệu)
- */
-router.get('/token/:token/info', async (req, res) => {
-  try {
-    const info = tokenStore.getInfo(req.params.token);
-    
-    if (!info) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Token không tồn tại hoặc đã hết hạn.' 
-      });
-    }
-
-    res.json({ 
-      success: true,
-      token: req.params.token,
-      ...info,
     });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });

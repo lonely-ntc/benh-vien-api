@@ -33,23 +33,26 @@ app.get('/', (_req, res) => {
     version: '1.0.0',
     status: 'running',
     endpoints: {
-      'POST /api/auth/login':                           'Đăng nhập → JWT Token',
+      'POST /api/auth/login':                           'Đăng nhập → JWT Token chung',
       
       '=== BỆNH NHÂN ===': '',
-      'GET  /api/benhNhan':                             'Bệnh nhân phân trang [JWT]',
-      'GET  /api/benhNhan/tatca':                       'Tất cả bệnh nhân [JWT]',
-      'POST /api/benhNhan/byIds':                       'Tạo token từ IDs [JWT]',
-      'GET  /api/benhNhan/token/:token':                'Lấy dữ liệu theo token [JWT]',
-      'GET  /api/benhNhan/token/:token/info':           'Thông tin token [JWT]',
+      'GET  /api/benhNhan':                             'Tất cả bệnh nhân (phân trang) [JWT]',
+      'GET  /api/benhNhan/tatca':                       'Tất cả bệnh nhân (không phân trang) [JWT]',
+      'POST /api/benhNhan/byIds':                       'Tạo data token từ mã bệnh nhân (benhNhanId) [JWT]',
+      'GET  /api/benhNhan/thongtinbenhnhan?token=xxx':  'Lấy dữ liệu đã chọn theo data token [JWT]',
       'POST /api/benhNhan/push':                        'Thêm/cập nhật bệnh nhân [JWT]',
+      'GET  /api/benhNhan/:id':                         'Lấy 1 bệnh nhân theo Firestore ID [JWT]',
       
       '=== BỆNH TRUYỀN NHIỄM ===': '',
-      'GET  /api/benhTruyenNhiem':                      'Bệnh TN phân trang [JWT]',
-      'GET  /api/benhTruyenNhiem/tatca':                'Tất cả bệnh TN [JWT]',
-      'POST /api/benhTruyenNhiem/byIds':                'Tạo token từ IDs [JWT]',
-      'GET  /api/benhTruyenNhiem/token/:token':         'Lấy dữ liệu theo token [JWT]',
-      'GET  /api/benhTruyenNhiem/token/:token/info':    'Thông tin token [JWT]',
+      'GET  /api/benhTruyenNhiem':                      'Tất cả bệnh TN (phân trang) [JWT]',
+      'GET  /api/benhTruyenNhiem/tatca':                'Tất cả bệnh TN (không phân trang) [JWT]',
+      'POST /api/benhTruyenNhiem/byIds':                'Tạo data token từ mã bệnh án (benhAnId) [JWT]',
+      'GET  /api/benhTruyenNhiem/thongtinbenhan?token=xxx': 'Lấy dữ liệu đã chọn theo data token [JWT]',
       'POST /api/benhTruyenNhiem/push':                 'Thêm/cập nhật bệnh TN [JWT]',
+      'GET  /api/benhTruyenNhiem/:id':                  'Lấy 1 ca bệnh theo Firestore ID [JWT]',
+      
+      '=== DANH MỤC ===': '',
+      'GET  /api/danhMuc/:collection':                  'Lấy danh mục (gioiTinh, danToc, benhNen...) [JWT]',
     },
   });
 });

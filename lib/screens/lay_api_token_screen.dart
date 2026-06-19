@@ -104,8 +104,8 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
     
     try {
       final endpoint = isBenhNhan 
-          ? '$_apiBaseUrl/api/benhNhan/token/$dataToken'
-          : '$_apiBaseUrl/api/benhTruyenNhiem/token/$dataToken';
+          ? '$_apiBaseUrl/api/benhNhan/thongtinbenhnhan?token=$dataToken'
+          : '$_apiBaseUrl/api/benhTruyenNhiem/thongtinbenhan?token=$dataToken';
       
       final resp = await http.get(
         Uri.parse(endpoint),
@@ -480,7 +480,7 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
         "  -d '$bodyJson'";
     
     final curlGetByToken = _dataTokenBN != null
-        ? 'curl -X GET "$_apiBaseUrl/api/benhNhan/token/$_dataTokenBN" \\\n'
+        ? 'curl -X GET "$_apiBaseUrl/api/benhNhan/thongtinbenhnhan?token=$_dataTokenBN" \\\n'
           '  -H "Authorization: Bearer ${_token!}"'
         : null;
     
@@ -523,12 +523,12 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
         ),
         const SizedBox(height: 12),
 
-        // ── 2. GET token/:token — lấy dữ liệu bằng token ──────────────────
+        // ── 2. GET thongtinbenhnhan — lấy dữ liệu bằng token ──────────────────
         if (_dataTokenBN != null) ...[
           _RequestCard(
             badge: '2',
             method: 'GET',
-            endpoint: '/api/benhNhan/token/:token',
+            endpoint: '/api/benhNhan/thongtinbenhnhan?token=xxx',
             badgeColor: Colors.green.shade700,
             title: 'Lấy dữ liệu bằng data token',
             description: 'Sử dụng token từ bước 1 để lấy dữ liệu đã chọn',
@@ -572,7 +572,7 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
         "  -d '$bodyJson'";
     
     final curlGetByToken = _dataTokenBTN != null
-        ? 'curl -X GET "$_apiBaseUrl/api/benhTruyenNhiem/token/$_dataTokenBTN" \\\n'
+        ? 'curl -X GET "$_apiBaseUrl/api/benhTruyenNhiem/thongtinbenhan?token=$_dataTokenBTN" \\\n'
           '  -H "Authorization: Bearer ${_token!}"'
         : null;
     
@@ -616,12 +616,12 @@ class _LayApiTokenScreenState extends State<LayApiTokenScreen>
         ),
         const SizedBox(height: 12),
 
-        // ── 2. GET token/:token — lấy dữ liệu bằng token ──────────────────
+        // ── 2. GET thongtinbenhan — lấy dữ liệu bằng token ──────────────────
         if (_dataTokenBTN != null) ...[
           _RequestCard(
             badge: '2',
             method: 'GET',
-            endpoint: '/api/benhTruyenNhiem/token/:token',
+            endpoint: '/api/benhTruyenNhiem/thongtinbenhan?token=xxx',
             badgeColor: Colors.green.shade700,
             title: 'Lấy dữ liệu bằng data token',
             description: 'Sử dụng token từ bước 1 để lấy dữ liệu đã chọn',
