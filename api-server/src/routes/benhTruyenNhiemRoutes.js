@@ -97,6 +97,12 @@ router.post('/byIds', async (req, res) => {
     res.status(500).json({ success: false, message: e.message });
   }
 });
+
+/**
+ * GET /api/benhTruyenNhiem/tatca
+ * Lấy toàn bộ ca bệnh không phân trang
+ */
+router.get('/tatca', async (req, res) => {
   try {
     const snap = await db.collection('benhTruyenNhiem').orderBy('ngayTao', 'desc').get();
     const data = snap.docs.map(d => ({ id: d.id, ...sanitize(d.data()) }));
