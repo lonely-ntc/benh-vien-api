@@ -110,14 +110,19 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
   // ── Tạo data token cho bệnh nhân đã chọn ──────────────────────────────────
   Future<String?> _taoDataTokenBN(List<BenhNhan> ds) async {
     if (_token == null) return null;
-    // Sử dụng Firestore document ID (giống như API /tatca trả về)
+    // Sử dụng benhNhanId (mã nghiệp vụ) thay vì Firestore document ID
     final ids = ds
         .where((e) => _selBN.contains(e.id))
-        .map((e) => e.id) // Dùng document ID thay vì benhNhanId
+        .where((e) => e.benhNhanId != null && e.benhNhanId!.isNotEmpty) // Chỉ lấy có benhNhanId
+        .map((e) => e.benhNhanId!) // Dùng benhNhanId
         .toList();
-    if (ids.isEmpty) return null;
+    
+    if (ids.isEmpty) {
+      print('⚠️ Không có bệnh nhân nào có benhNhanId');
+      return null;
+    }
 
-    print('🔍 Debug - Tạo token với document IDs: $ids');
+    print('🔍 Debug - Tạo token với benhNhanIds: $ids');
 
     try {
       final resp = await http.post(
@@ -144,12 +149,17 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
   // ── Tạo data token cho bệnh truyền nhiễm đã chọn ──────────────────────────
   Future<String?> _taoDataTokenBTN(List<BenhTruyenNhiem> ds) async {
     if (_token == null) return null;
-    // Sử dụng Firestore document ID (giống như API /tatca trả về)
+    // Sử dụng benhAnId (mã nghiệp vụ) thay vì Firestore document ID
     final ids = ds
         .where((e) => _selBTN.contains(e.id))
-        .map((e) => e.id) // Dùng document ID thay vì benhAnId
+        .where((e) => e.benhAnId != null && e.benhAnId!.isNotEmpty) // Chỉ lấy có benhAnId
+        .map((e) => e.benhAnId!) // Dùng benhAnId
         .toList();
-    if (ids.isEmpty) return null;
+    
+    if (ids.isEmpty) {
+      print('⚠️ Không có ca bệnh nào có benhAnId');
+      return null;
+    }
 
     try {
       final resp = await http.post(

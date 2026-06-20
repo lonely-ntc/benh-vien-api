@@ -2,7 +2,7 @@
  * Format dữ liệu bệnh nhân từ Firestore sang chuẩn API
  * - Thông tin cá nhân: text (trả về "" nếu null)
  * - Danh mục: chỉ lấy id (trả về "" nếu null)
- * - Null chỉ dùng cho các trường đặc biệt
+ * - Id: sử dụng benhNhanId từ Firestore thay vì null
  */
 export function formatBenhNhanToAPI(data) {
   // Helper: lấy id hoặc giá trị text, trả về "" nếu null
@@ -19,7 +19,7 @@ export function formatBenhNhanToAPI(data) {
   };
   
   return {
-    Id: null,
+    Id: data.benhNhanId || null,  // Sử dụng benhNhanId từ Firestore (VD: BNO158)
     UnitId: null,
     MaBenhNhan: data.benhNhanId || data.cccd || "",
     HoTen: data.hoTen || "",
@@ -57,7 +57,7 @@ export function formatBenhNhanToAPI(data) {
 
 /**
  * Format dữ liệu bệnh truyền nhiễm từ Firestore sang chuẩn API
- * Giống format của hệ thống cũ
+ * - Id: sử dụng benhAnId từ Firestore thay vì null
  */
 export function formatBenhTNToAPI(data) {
   // Helper: lấy id hoặc giá trị text, trả về "" nếu null
@@ -74,7 +74,7 @@ export function formatBenhTNToAPI(data) {
   };
   
   return {
-    Id: null,
+    Id: data.benhAnId || null,  // Sử dụng benhAnId từ Firestore
     UnitId: null,
     MaBenhNhan: data.benhAnId || "",
     HoTen: data.hoTen || "",

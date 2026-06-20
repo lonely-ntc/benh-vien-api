@@ -76,10 +76,10 @@ router.get('/', async (req, res) => {
 /**
  * POST /api/benhNhan/byIds
  * Body: { 
- *   benhNhanIds: ['docId1','docId2',...],  // Firestore document IDs
- *   benhTNIds: ['docId1','docId2',...]      // Firestore document IDs (optional)
+ *   benhNhanIds: ['BN0001','BN0002',...],  // Mã bệnh nhân (field benhNhanId)
+ *   benhTNIds: ['BA0001','BA0002',...]      // Mã bệnh án (optional)
  * }
- * Tạo token dựa trên Firestore document IDs
+ * Tạo token dựa trên mã benhNhanId
  */
 router.post('/byIds', async (req, res) => {
   try {
@@ -88,34 +88,44 @@ router.post('/byIds', async (req, res) => {
     if (!Array.isArray(benhNhanIds) || benhNhanIds.length === 0) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Cần truyền mảng benhNhanIds với ít nhất 1 document ID.' 
+        message: 'Cần truyền mảng benhNhanIds với ít nhất 1 mã bệnh nhân (VD: BN0001).' 
       });
     }
 
-    // Lấy dữ liệu bệnh nhân theo document ID
+    // Lấy dữ liệu bệnh nhân theo field benhNhanId
+    const benhNhanChunks = [];
+    for (let i = 0; i < benhNhanIds.length; i += 10) {
+      benhNhanChunks.push(benhNhanIds.slice(i, i + 10));
+    }
+    
     const benhNhanData = [];
-    for (const docId of benhNhanIds) {
-      const doc = await db.collection('benhNhan').doc(docId).get();
-      if (doc.exists) {
-        benhNhanData.push({ id: doc.id, ...sanitize(doc.data()) });
-      }
+    for (const chunk of benhNhanChunks) {
+      const snap = await db.collection('benhNhan')
+        .where('benhNhanId', 'in', chunk)
+        .get();
+      snap.docs.forEach(d => benhNhanData.push({ id: d.id, ...sanitize(d.data()) }));
     }
 
-    // Lấy dữ liệu bệnh truyền nhiễm theo document ID nếu có
+    // Lấy dữ liệu bệnh truyền nhiễm theo field benhAnId nếu có
     let benhTNData = [];
     if (benhTNIds.length > 0) {
-      for (const docId of benhTNIds) {
-        const doc = await db.collection('benhTruyenNhiem').doc(docId).get();
-        if (doc.exists) {
-          benhTNData.push({ id: doc.id, ...sanitize(doc.data()) });
-        }
+      const benhTNChunks = [];
+      for (let i = 0; i < benhTNIds.length; i += 10) {
+        benhTNChunks.push(benhTNIds.slice(i, i + 10));
+      }
+      
+      for (const chunk of benhTNChunks) {
+        const snap = await db.collection('benhTruyenNhiem')
+          .where('benhAnId', 'in', chunk)
+          .get();
+        snap.docs.forEach(d => benhTNData.push({ id: d.id, ...sanitize(d.data()) }));
       }
     }
 
-    // Tạo token và lưu document IDs
+    // Tạo token và lưu mã nghiệp vụ (benhNhanId, benhAnId)
     const token = tokenStore.create({
-      benhNhanIds,  // Firestore document IDs
-      benhTNIds,    // Firestore document IDs
+      benhNhanIds,  // ['BN0001', 'BN0002', ...]
+      benhTNIds,    // ['BA0001', 'BA0002', ...]
       timestamp: new Date().toISOString(),
       totalBenhNhan: benhNhanData.length,
       totalBenhTN: benhTNData.length,
@@ -200,29 +210,43 @@ router.get('/thongtinbenhnhan', async (req, res) => {
     }
 
     const { benhNhanIds = [], benhTNIds = [] } = tokenData;
-    console.log(`📊 Fetching: ${benhNhanIds.length} BN IDs, ${benhTNIds.length} BTN IDs`);
+    console.log(`📊 Fetching: ${benhNhanIds.length} benhNhanIds, ${benhTNIds.length} benhTNIds`);
 
-    // Lấy dữ liệu bệnh nhân theo document ID
+    // Lấy dữ liệu bệnh nhân theo field benhNhanId
     const benhNhanData = [];
     if (benhNhanIds.length > 0) {
-      for (const docId of benhNhanIds) {
-        const doc = await db.collection('benhNhan').doc(docId).get();
-        if (doc.exists) {
-          const data = doc.data();
+      const chunks = [];
+      for (let i = 0; i < benhNhanIds.length; i += 10) {
+        chunks.push(benhNhanIds.slice(i, i + 10));
+      }
+      
+      for (const chunk of chunks) {
+        const snap = await db.collection('benhNhan')
+          .where('benhNhanId', 'in', chunk)
+          .get();
+        snap.docs.forEach(d => {
+          const data = d.data();
           benhNhanData.push(formatBenhNhanToAPI(data));
-        }
+        });
       }
     }
 
-    // Lấy dữ liệu bệnh truyền nhiễm theo document ID (nếu có)
+    // Lấy dữ liệu bệnh truyền nhiễm theo field benhAnId (nếu có)
     const benhTNData = [];
     if (benhTNIds.length > 0) {
-      for (const docId of benhTNIds) {
-        const doc = await db.collection('benhTruyenNhiem').doc(docId).get();
-        if (doc.exists) {
-          const data = doc.data();
+      const chunks = [];
+      for (let i = 0; i < benhTNIds.length; i += 10) {
+        chunks.push(benhTNIds.slice(i, i + 10));
+      }
+      
+      for (const chunk of chunks) {
+        const snap = await db.collection('benhTruyenNhiem')
+          .where('benhAnId', 'in', chunk)
+          .get();
+        snap.docs.forEach(d => {
+          const data = d.data();
           benhTNData.push(formatBenhTNToAPI(data));
-        }
+        });
       }
     }
 
