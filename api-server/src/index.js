@@ -59,13 +59,17 @@ app.get('/', (_req, res) => {
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
+  console.log(`⚠️  404 Not Found: ${req.method} ${req.path}`);
   res.status(404).json({ success: false, message: `Endpoint "${req.path}" không tồn tại.` });
 });
 
 // ── Error handler ─────────────────────────────────────────────────────────────
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(500).json({ success: false, message: 'Lỗi server nội bộ.' });
+app.use((err, req, res, _next) => {
+  console.error('❌ Server Error:', err);
+  // Đảm bảo luôn trả về JSON
+  if (!res.headersSent) {
+    res.status(500).json({ success: false, message: 'Lỗi server nội bộ.', error: err.message });
+  }
 });
 
 // ── Khởi động ─────────────────────────────────────────────────────────────────

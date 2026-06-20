@@ -190,10 +190,13 @@ router.get('/:id', async (req, res) => {
  * Format: Chuẩn API với ID cho danh mục, text cho thông tin cá nhân
  */
 router.get('/thongtinbenhan', async (req, res) => {
+  console.log('📥 GET /thongtinbenhan - Query:', req.query);
+  
   try {
     const dataToken = req.query.token;
     
     if (!dataToken) {
+      console.log('❌ Missing token parameter');
       return res.status(400).json({ 
         success: false, 
         message: 'Cần truyền token trong query parameter (?token=xxx)' 
@@ -201,6 +204,7 @@ router.get('/thongtinbenhan', async (req, res) => {
     }
     
     const tokenData = tokenStore.get(dataToken);
+    console.log('🔍 Token data:', tokenData ? 'Found' : 'Not found');
     
     if (!tokenData) {
       return res.status(404).json({ 
@@ -210,6 +214,7 @@ router.get('/thongtinbenhan', async (req, res) => {
     }
 
     const { benhNhanIds = [], benhTNIds = [] } = tokenData;
+    console.log(`📊 Fetching: ${benhNhanIds.length} BN, ${benhTNIds.length} BTN`);
 
     // Lấy dữ liệu bệnh nhân theo benhNhanId (nếu có)
     const benhNhanData = [];
@@ -249,6 +254,8 @@ router.get('/thongtinbenhan', async (req, res) => {
       }
     }
 
+    console.log(`✅ Returning: ${benhNhanData.length} BN, ${benhTNData.length} BTN`);
+    
     res.json({ 
       success: true,
       token: dataToken,

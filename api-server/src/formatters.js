@@ -1,29 +1,39 @@
 /**
  * Format dữ liệu bệnh nhân từ Firestore sang chuẩn API
- * - Thông tin cá nhân: text
- * - Danh mục: chỉ lấy id
- * - Không có dữ liệu: null
+ * - Thông tin cá nhân: text (trả về "" nếu null)
+ * - Danh mục: chỉ lấy id (trả về "" nếu null)
+ * - Null chỉ dùng cho các trường đặc biệt
  */
 export function formatBenhNhanToAPI(data) {
-  // Helper: lấy id từ object {id, name} hoặc trả về null
-  const getId = (obj) => obj?.id?.toString() || null;
+  // Helper: lấy id hoặc giá trị text, trả về "" nếu null
+  const getId = (obj) => {
+    if (obj === null || obj === undefined) return "";
+    if (typeof obj === 'string' || typeof obj === 'number') return obj.toString();
+    return obj?.id?.toString() || "";
+  };
+  
+  const getText = (val) => {
+    if (val === null || val === undefined) return "";
+    if (typeof val === 'string') return val;
+    return val.toString();
+  };
   
   return {
     Id: null,
     UnitId: null,
-    MaBenhNhan: data.benhNhanId || data.cccd || null,
-    HoTen: data.hoTen || null,
-    NgaySinh: data.ngaySinh || null,
+    MaBenhNhan: data.benhNhanId || data.cccd || "",
+    HoTen: data.hoTen || "",
+    NgaySinh: data.ngaySinh || "",
     GioiTinh: getId(data.gioiTinh),
     DanTocId: getId(data.danToc),
-    MaDinhDanhCaNhan: data.cccd || null,
-    SDT: data.soDienThoai || null,
-    BHYT: data.baoHiemYTe || null,
-    NgheNghiep: data.ngheNghiep || null,
-    DiaChi: data.diaChi || null,
+    MaDinhDanhCaNhan: data.cccd || "",
+    SDT: data.soDienThoai || "",
+    BHYT: data.baoHiemYTe || "",
+    NgheNghiep: getId(data.ngheNghiep) || "",
+    DiaChi: data.diaChi || "",
     CityId: getId(data.tinh),
-    WardId: data.phuong || null,
-    NhomMau: data.nhomMau || null,
+    WardId: getText(data.phuong) || "",
+    NhomMau: data.nhomMau || "",
     BenhNen: getId(data.benhNen),
     BenhTruyenNhiem: getId(data.benhTruyenNhiem),
     TinhTrangTiemChung: getId(data.tinhTrangTiemChung),
@@ -38,78 +48,90 @@ export function formatBenhNhanToAPI(data) {
     KetQuaXetNghiem: getId(data.ketQuaXetNghiem),
     CoSoBaoCao: getId(data.coSoBaoCao),
     CoSoDieuTri: getId(data.coSoDieuTri),
-    DonViDieuTra: data.donViDieuTra || null,
-    PhongKham: data.phongKham || null,
-    TrangThai: data.trangThai || null,
+    DonViDieuTra: getText(data.donViDieuTra),
+    PhongKham: data.phongKham || "",
+    TrangThai: data.trangThai || "",
     SoThuTu: data.soThuTu || null,
   };
 }
 
 /**
  * Format dữ liệu bệnh truyền nhiễm từ Firestore sang chuẩn API
+ * Giống format của hệ thống cũ
  */
 export function formatBenhTNToAPI(data) {
-  const getId = (obj) => obj?.id?.toString() || null;
+  // Helper: lấy id hoặc giá trị text, trả về "" nếu null
+  const getId = (obj) => {
+    if (obj === null || obj === undefined) return "";
+    if (typeof obj === 'string' || typeof obj === 'number') return obj.toString();
+    return obj?.id?.toString() || "";
+  };
+  
+  const getText = (val) => {
+    if (val === null || val === undefined) return "";
+    if (typeof val === 'string') return val;
+    return val.toString();
+  };
   
   return {
     Id: null,
     UnitId: null,
-    BenhAnId: data.benhAnId || null,
-    HoTen: data.hoTen || null,
-    NgaySinh: data.ngaySinh || null,
+    MaBenhNhan: data.benhAnId || "",
+    HoTen: data.hoTen || "",
+    NgaySinh: data.ngaySinh || "",
     GioiTinh: getId(data.gioiTinh),
     DanTocId: getId(data.danToc),
-    MaDinhDanhCaNhan: data.maDinhDanhCaNhan || null,
-    TenNguoiBaoHo: data.tenNguoiBaoHo || null,
-    SDT: data.sdt || null,
-    CoThai: getId(data.coThai),
+    MaDinhDanhCaNhan: data.maDinhDanhCaNhan || "",
+    TenNguoiBaoHo: data.tenNguoiBaoHo || "",
+    SDT: data.sdt || "",
+    CoThai: getId(data.coThai) || null,
     TuanThai: data.tuanThai || null,
-    NgheNghiep: data.ngheNghiep || null,
-    DiaChiNoiLamViec_Hoc: data.diaChiNoiLamViec || null,
-    NoiLamViec_Hoc: data.noiLamViec || null,
-    CityId_Hoc: getId(data.cityIdHoc),
-    WardId_Hoc: data.wardIdHoc || null,
-    NoiLamViec_CityId: getId(data.noiLamViecCityId),
-    NoiLamViec_WardId: data.noiLamViecWardId || null,
-    NoiOHienNay: data.noiOHienNay || null,
-    CityId: getId(data.cityId),
-    WardId: data.wardId || null,
-    NoiOHienNay_CityId: getId(data.noiOHienNayCityId),
-    NoiOHienNay_WardId: data.noiOHienNayWardId || null,
+    NgheNghiep: getId(data.ngheNghiep) || "",
+    DiaChiNoiLamViec_Hoc: data.diaChiNoiLamViec || "",
+    NoiLamViec_Hoc: data.noiLamViec || "",
+    CityId_Hoc: getId(data.cityIdHoc) || "",
+    WardId_Hoc: getText(data.wardIdHoc) || "",
+    NoiLamViec_CityId: getId(data.noiLamViecCityId) || null,
+    NoiLamViec_WardId: getText(data.noiLamViecWardId) || null,
+    NoiOHienNay: data.noiOHienNay || "",
+    CityId: getId(data.cityId) || "",
+    WardId: getText(data.wardId) || "",
+    NoiOHienNay_CityId: getId(data.noiOHienNayCityId) || null,
+    NoiOHienNay_WardId: getText(data.noiOHienNayWardId) || null,
     NoiOHienNay_KhuPho: data.noiOHienNayKhuPho || null,
-    KhuPhoAp: data.khuPhoAp || null,
-    SoHSBA: data.soHSBA || null,
-    CoSoDieuTri: getId(data.coSoDieuTri),
-    CityId_CSDT: getId(data.cityIdCSDT),
-    ChanDoanBenh: getId(data.chanDoanBenh),
-    PhanDoBenh: getId(data.phanDoBenh),
-    ThongTinDieuTri: data.thongTinDieuTri?.name || null,
-    ChanDoanBienChung: data.chanDoanBienChung || null,
-    ChanDoanBenhKemTheo: data.chanDoanBenhKemTheo || null,
-    BenhNenKemTheoId: getId(data.benhNenKemTheo),
-    NgayKhoiPhat: data.ngayKhoiPhat || null,
-    NgayNhapVien: data.ngayNhapVien || null,
+    KhuPhoAp: getText(data.khuPhoAp) || "",
+    SoHSBA: data.soHSBA || "",
+    CoSoDieuTri: getId(data.coSoDieuTri) || "",
+    CityId_CSDT: getId(data.cityIdCSDT) || "",
+    ChanDoanBenh: getId(data.chanDoanBenh) || "",
+    PhanDoBenh: getId(data.phanDoBenh) || "",
+    ThongTinDieuTri: data.thongTinDieuTri?.name || data.thongTinDieuTri || "",
+    ChanDoanBienChung: data.chanDoanBienChung || "",
+    ChanDoanBenhKemTheo: data.chanDoanBenhKemTheo || "",
+    BenhNenKemTheoId: getId(data.benhNenKemTheo) || "",
+    NgayKhoiPhat: data.ngayKhoiPhat || "",
+    NgayNhapVien: data.ngayNhapVien || "",
     NgayXV_TV_CV: data.ngayXVTVCV || null,
-    PhanLoaiChanDoan: getId(data.phanLoaiChanDoan),
-    LayMauXN: data.layMauXN?.name || null,
-    LoaiBenhPham: getId(data.loaiBenhPham),
-    DonViThucHienXN: data.donViThucHienXN || null,
-    NgayLayMau: data.ngayLayMau || null,
-    LoaiXN: getId(data.loaiXN),
-    KetQuaXN: getId(data.ketQuaXN),
-    TinhTrangTiem: getId(data.tinhTrangTiem),
-    HinhThucDieuTri: getId(data.hinhThucDieuTri),
+    PhanLoaiChanDoan: getId(data.phanLoaiChanDoan) || "",
+    LayMauXN: data.layMauXN?.name || data.layMauXN || "",
+    LoaiBenhPham: getId(data.loaiBenhPham) || "",
+    DonViThucHienXN: data.donViThucHienXN || "",
+    NgayLayMau: data.ngayLayMau || "",
+    LoaiXN: getId(data.loaiXN) || "",
+    KetQuaXN: getId(data.ketQuaXN) || "",
+    TinhTrangTiem: getId(data.tinhTrangTiem) || "",
+    HinhThucDieuTri: getId(data.hinhThucDieuTri) || "",
     ChanDoanChinh: data.chanDoanChinh || null,
-    SoMuiTiemUong: data.soMuiTiemUong || null,
-    TienSuDichTe: data.tienSuDichTe || null,
-    NguoiDieuTraDichTe: data.nguoiDieuTraDichTe || null,
-    SDTNguoiDieuTraDTe: data.sdtNguoiDieuTraDTe || null,
-    DonViDieuTra: data.donViDieuTra || null,
-    EmailDonViDieuTra: data.emailDonViDieuTra || null,
-    NgayBaoCao: data.ngayBaoCao || null,
-    NguoiBaoCao: data.nguoiBaoCao || null,
-    SDTNguoiBaoCao: data.sdtNguoiBaoCao || null,
-    EmailNguoiBaoCao: data.emailNguoiBaoCao || null,
+    SoMuiTiemUong: data.soMuiTiemUong || "",
+    TienSuDichTe: data.tienSuDichTe || "",
+    NguoiDieuTraDichTe: data.nguoiDieuTraDichTe || "",
+    SDTNguoiDieuTraDTe: data.sdtNguoiDieuTraDTe || "",
+    DonViDieuTra: getId(data.donViDieuTra) || "",
+    EmailDonViDieuTra: data.emailDonViDieuTra || "",
+    NgayBaoCao: data.ngayBaoCao || "",
+    NguoiBaoCao: data.nguoiBaoCao || "",
+    SDTNguoiBaoCao: data.sdtNguoiBaoCao || "",
+    EmailNguoiBaoCao: data.emailNguoiBaoCao || "",
     PhanDoBenhText: null,
   };
 }
