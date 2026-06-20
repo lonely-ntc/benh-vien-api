@@ -21,6 +21,10 @@ Tất cả chức năng lấy token đã được tích hợp vào **màn hình 
 
 ## Cách sử dụng
 
+### ⚠️ Quan trọng
+- API yêu cầu **mã nghiệp vụ** (benhNhanId, benhAnId), KHÔNG phải Firestore document ID
+- Nếu bệnh nhân/ca bệnh chưa có mã nghiệp vụ, hệ thống sẽ tự động fallback sang document ID
+
 ### Bước 1: Xác thực
 1. Nhập Username và Password
 2. Nhấn "Lấy Token" → Nhận JWT Token

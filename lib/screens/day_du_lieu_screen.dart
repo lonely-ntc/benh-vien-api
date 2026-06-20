@@ -110,7 +110,11 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
   // ── Tạo data token cho bệnh nhân đã chọn ──────────────────────────────────
   Future<String?> _taoDataTokenBN(List<BenhNhan> ds) async {
     if (_token == null) return null;
-    final ids = ds.where((e) => _selBN.contains(e.id)).map((e) => e.id).toList();
+    // Lấy benhNhanId (mã bệnh nhân như BN0001) thay vì document ID
+    final ids = ds
+        .where((e) => _selBN.contains(e.id))
+        .map((e) => e.benhNhanId ?? e.id) // Fallback sang doc ID nếu không có benhNhanId
+        .toList();
     if (ids.isEmpty) return null;
 
     try {
@@ -136,7 +140,11 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
   // ── Tạo data token cho bệnh truyền nhiễm đã chọn ──────────────────────────
   Future<String?> _taoDataTokenBTN(List<BenhTruyenNhiem> ds) async {
     if (_token == null) return null;
-    final ids = ds.where((e) => _selBTN.contains(e.id)).map((e) => e.id).toList();
+    // Lấy benhAnId (mã bệnh án) thay vì document ID
+    final ids = ds
+        .where((e) => _selBTN.contains(e.id))
+        .map((e) => e.benhAnId ?? e.id) // Fallback sang doc ID nếu không có benhAnId
+        .toList();
     if (ids.isEmpty) return null;
 
     try {
