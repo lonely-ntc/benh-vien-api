@@ -117,6 +117,8 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
         .toList();
     if (ids.isEmpty) return null;
 
+    print('🔍 Debug - Tạo token với benhNhanIds: $ids');
+
     try {
       final resp = await http.post(
         Uri.parse('$_apiBaseUrl/api/benhNhan/byIds'),
@@ -128,11 +130,13 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
       ).timeout(const Duration(seconds: 30));
 
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      print('🔍 Debug - Response từ /byIds: $body');
+      
       if (body['success'] == true && body['token'] != null) {
         return body['token'] as String;
       }
     } catch (e) {
-      // Ignore error, return null
+      print('❌ Debug - Lỗi tạo token: $e');
     }
     return null;
   }
@@ -183,10 +187,21 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
 
     // Tạo data token
     String? dataToken;
+    Map<String, dynamic>? createTokenResponse;
+    List<String> sentIds = [];
+    
     if (isBenh) {
-      dataToken = await _taoDataTokenBN(ds as List<BenhNhan>);
+      final selectedBN = (ds as List<BenhNhan>).where((e) => _selBN.contains(e.id)).toList();
+      sentIds = selectedBN.map((e) => e.benhNhanId ?? e.id).toList();
+      print('🔍 Gửi IDs cho bệnh nhân: $sentIds');
+      
+      dataToken = await _taoDataTokenBN(ds);
     } else {
-      dataToken = await _taoDataTokenBTN(ds as List<BenhTruyenNhiem>);
+      final selectedBTN = (ds as List<BenhTruyenNhiem>).where((e) => _selBTN.contains(e.id)).toList();
+      sentIds = selectedBTN.map((e) => e.benhAnId ?? e.id).toList();
+      print('🔍 Gửi IDs cho bệnh TN: $sentIds');
+      
+      dataToken = await _taoDataTokenBTN(ds);
     }
 
     // Close loading dialog
@@ -206,6 +221,7 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
         loaiDuLieu: isBenh ? 'bệnh nhân' : 'ca bệnh TN',
         selectedItems: selectedItems,
         isBenh: isBenh,
+        sentIds: sentIds, // Truyền thêm IDs đã gửi
       );
     }
   }
@@ -218,6 +234,7 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
     required String loaiDuLieu,
     required List<dynamic> selectedItems,
     required bool isBenh,
+    List<String>? sentIds, // IDs đã gửi lên API
   }) {
     showDialog(
       context: context,
@@ -228,6 +245,7 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
         loaiDuLieu: loaiDuLieu,
         selectedItems: selectedItems,
         isBenh: isBenh,
+        sentIds: sentIds,
       ),
     );
   }
@@ -786,6 +804,7 @@ class _TatCaTokenDialog extends StatelessWidget {
   final String loaiDuLieu;
   final List<dynamic> selectedItems;
   final bool isBenh;
+  final List<String>? sentIds;
 
   const _TatCaTokenDialog({
     required this.jwtToken,
@@ -794,6 +813,7 @@ class _TatCaTokenDialog extends StatelessWidget {
     required this.loaiDuLieu,
     required this.selectedItems,
     required this.isBenh,
+    this.sentIds,
   });
 
   void _copy(BuildContext context, String text, String label) {
@@ -899,15 +919,47 @@ class _TatCaTokenDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.orange.shade200),
                     ),
-                    child: Row(children: [
-                      Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Không thể tạo data token. Vui lòng thử lại.',
-                          style: TextStyle(fontSize: 13, height: 1.4),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Không thể tạo data token',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      ),
+                      ]),
+                      if (sentIds != null && sentIds!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        const Text('IDs đã gửi lên API:',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: SelectableText(
+                            sentIds!.join(', '),
+                            style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Vui lòng kiểm tra:\n'
+                          '• Các ID trên có tồn tại trong database không?\n'
+                          '• Field "${isBenh ? "benhNhanId" : "benhAnId"}" có đúng giá trị không?',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade700, height: 1.4),
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Vui lòng thử lại hoặc kiểm tra kết nối.',
+                          style: TextStyle(fontSize: 11, height: 1.4),
+                        ),
+                      ],
                     ]),
                   ),
                 ],
