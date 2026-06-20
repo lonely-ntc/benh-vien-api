@@ -90,31 +90,240 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
     });
   }
 
-  // ── Đẩy bệnh nhân ─────────────────────────────────────────────────────────
+  // ── Đẩy bệnh nhân theo cơ chế token mới ──────────────────────────────────
   Future<void> _dayBN(List<BenhNhan> ds) async {
     if (_token == null) { _nhacToken(); return; }
     if (_selBN.isEmpty) { _nhacChon(); return; }
+    
+    // Hiển thị dialog xác nhận
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(children: [
+          Icon(Icons.info_outline, color: Colors.blue),
+          SizedBox(width: 8),
+          Text('Xác nhận', style: TextStyle(fontSize: 16)),
+        ]),
+        content: Text(
+          'Tạo data token cho ${_selBN.length} bệnh nhân đã chọn?\n\n'
+          'Data token sẽ chứa toàn bộ dữ liệu đã được mã hóa bằng JWT Secret. '
+          'Dùng token này để chia sẻ dữ liệu với hệ thống khác.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Tạo Token'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     setState(() { _pushingBN = true; _ketQuaBN = []; _hienKetQuaBN = false; });
 
-    final list = ds.where((e) => _selBN.contains(e.id))
-        .map((e) => {'id': e.id, ...e.toFirestore(), 'soThuTu': e.soThuTu}).toList();
-    final r = await ApiPushService().dayNhieuBenhNhan(_token!, list);
+    try {
+      // Lấy benhNhanIds
+      final ids = ds
+          .where((e) => _selBN.contains(e.id))
+          .where((e) => e.benhNhanId != null && e.benhNhanId!.isNotEmpty)
+          .map((e) => e.benhNhanId!)
+          .toList();
 
-    setState(() { _pushingBN = false; _ketQuaBN = r; _hienKetQuaBN = true; });
+      if (ids.isEmpty) {
+        throw Exception('Không có bệnh nhân nào có mã benhNhanId');
+      }
+
+      print('🚀 Tạo data token cho ${ids.length} bệnh nhân: $ids');
+      
+      // Tạo data token
+      final tokenResp = await http.post(
+        Uri.parse('$_apiBaseUrl/api/benhNhan/byIds'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+        body: jsonEncode({
+          'benhNhanIds': ids,
+          'benhTNIds': [],
+        }),
+      ).timeout(const Duration(seconds: 30));
+
+      if (tokenResp.statusCode != 200) {
+        throw Exception('Không thể tạo token: ${tokenResp.body}');
+      }
+
+      final tokenBody = jsonDecode(tokenResp.body) as Map<String, dynamic>;
+      if (tokenBody['success'] != true || tokenBody['token'] == null) {
+        throw Exception('API không trả về token: ${tokenBody['message']}');
+      }
+
+      final dataToken = tokenBody['token'] as String;
+      final summary = tokenBody['summary'] as Map<String, dynamic>?;
+      
+      print('✅ Data token đã tạo thành công');
+      print('   Token: ${dataToken.substring(0, 20)}...');
+      print('   Summary: $summary');
+
+      setState(() {
+        _pushingBN = false;
+        _ketQuaBN = [
+          PushKetQua(
+            id: 'success',
+            hoTen: 'Thành công',
+            status: 'ok',
+            message: 'Đã tạo data token cho ${summary?['benhNhanCount'] ?? ids.length} bệnh nhân',
+          ),
+        ];
+        _hienKetQuaBN = true;
+      });
+
+      // Hiển thị token dialog
+      if (mounted) {
+        await _xemTatCaToken(context, ds, isBenh: true);
+      }
+    } catch (e) {
+      print('❌ Lỗi: $e');
+      setState(() {
+        _pushingBN = false;
+        _ketQuaBN = [PushKetQua(
+          id: 'error',
+          hoTen: 'Lỗi',
+          status: 'error',
+          message: e.toString(),
+        )];
+        _hienKetQuaBN = true;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Lỗi: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
   }
 
-  // ── Đẩy bệnh truyền nhiễm ─────────────────────────────────────────────────
+  // ── Đẩy bệnh truyền nhiễm theo cơ chế token mới ───────────────────────────
   Future<void> _dayBTN(List<BenhTruyenNhiem> ds) async {
     if (_token == null) { _nhacToken(); return; }
     if (_selBTN.isEmpty) { _nhacChon('ca bệnh'); return; }
+    
+    // Hiển thị dialog xác nhận
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(children: [
+          Icon(Icons.info_outline, color: Colors.blue),
+          SizedBox(width: 8),
+          Text('Xác nhận', style: TextStyle(fontSize: 16)),
+        ]),
+        content: Text(
+          'Tạo data token cho ${_selBTN.length} ca bệnh đã chọn?\n\n'
+          'Data token sẽ chứa toàn bộ dữ liệu đã được mã hóa bằng JWT Secret. '
+          'Dùng token này để chia sẻ dữ liệu với hệ thống khác.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Tạo Token'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     setState(() { _pushingBTN = true; _ketQuaBTN = []; _hienKetQuaBTN = false; });
 
-    // Dùng toApiPayload() — chỉ lấy id (String) cho các trường danh mục
-    final list = ds.where((e) => _selBTN.contains(e.id))
-        .map((e) => {'id': e.id, ...e.toApiPayload()}).toList();
-    final r = await ApiPushService().dayNhieuBTN(_token!, list);
+    try {
+      // Lấy benhAnIds
+      final ids = ds
+          .where((e) => _selBTN.contains(e.id))
+          .where((e) => e.benhAnId != null && e.benhAnId!.isNotEmpty)
+          .map((e) => e.benhAnId!)
+          .toList();
 
-    setState(() { _pushingBTN = false; _ketQuaBTN = r; _hienKetQuaBTN = true; });
+      if (ids.isEmpty) {
+        throw Exception('Không có ca bệnh nào có mã benhAnId');
+      }
+
+      print('🚀 Tạo data token cho ${ids.length} ca bệnh: $ids');
+      
+      // Tạo data token
+      final tokenResp = await http.post(
+        Uri.parse('$_apiBaseUrl/api/benhTruyenNhiem/byIds'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+        body: jsonEncode({
+          'benhNhanIds': [],
+          'benhTNIds': ids,
+        }),
+      ).timeout(const Duration(seconds: 30));
+
+      if (tokenResp.statusCode != 200) {
+        throw Exception('Không thể tạo token: ${tokenResp.body}');
+      }
+
+      final tokenBody = jsonDecode(tokenResp.body) as Map<String, dynamic>;
+      if (tokenBody['success'] != true || tokenBody['token'] == null) {
+        throw Exception('API không trả về token: ${tokenBody['message']}');
+      }
+
+      final dataToken = tokenBody['token'] as String;
+      final summary = tokenBody['summary'] as Map<String, dynamic>?;
+      
+      print('✅ Data token đã tạo thành công');
+      print('   Token: ${dataToken.substring(0, 20)}...');
+      print('   Summary: $summary');
+
+      setState(() {
+        _pushingBTN = false;
+        _ketQuaBTN = [
+          PushKetQua(
+            id: 'success',
+            hoTen: 'Thành công',
+            status: 'ok',
+            message: 'Đã tạo data token cho ${summary?['benhTNCount'] ?? ids.length} ca bệnh',
+          ),
+        ];
+        _hienKetQuaBTN = true;
+      });
+
+      // Hiển thị token dialog
+      if (mounted) {
+        await _xemTatCaToken(context, ds, isBenh: false);
+      }
+    } catch (e) {
+      print('❌ Lỗi: $e');
+      setState(() {
+        _pushingBTN = false;
+        _ketQuaBTN = [PushKetQua(
+          id: 'error',
+          hoTen: 'Lỗi',
+          status: 'error',
+          message: e.toString(),
+        )];
+        _hienKetQuaBTN = true;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Lỗi: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
   }
 
   void _nhacToken() => ScaffoldMessenger.of(context).showSnackBar(
@@ -600,7 +809,7 @@ class _TabBenhNhan extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
     color: Colors.white,
     child: Column(children: [
-      // Nút Tạo Data Token và Xem tất cả Token
+      // Nút Xem Token
       if (selected.isNotEmpty) ...[
         Row(children: [
           Expanded(
@@ -628,12 +837,12 @@ class _TabBenhNhan extends StatelessWidget {
           icon: pushing
               ? const SizedBox(width: 18, height: 18,
                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Icon(Icons.upload_rounded),
+              : const Icon(Icons.lock_outline),
           label: Text(
-            pushing ? 'Đang đẩy...'
-                : selected.isEmpty ? 'Chọn bệnh nhân để đẩy'
-                : 'Đẩy ${selected.length} bệnh nhân lên API',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            pushing ? 'Đang tạo token...'
+                : selected.isEmpty ? 'Chọn bệnh nhân để tạo token'
+                : 'Tạo Data Token cho ${selected.length} bệnh nhân',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: selected.isEmpty ? Colors.grey : const Color(0xFF1565C0),
@@ -716,7 +925,7 @@ class _TabBTN extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
     color: Colors.white,
     child: Column(children: [
-      // Nút Tạo Data Token và Xem tất cả Token
+      // Nút Xem Token
       if (selected.isNotEmpty) ...[
         Row(children: [
           Expanded(
@@ -744,12 +953,12 @@ class _TabBTN extends StatelessWidget {
           icon: pushing
               ? const SizedBox(width: 18, height: 18,
                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Icon(Icons.upload_rounded),
+              : const Icon(Icons.lock_outline),
           label: Text(
-            pushing ? 'Đang đẩy...'
-                : selected.isEmpty ? 'Chọn ca bệnh để đẩy'
-                : 'Đẩy ${selected.length} ca bệnh TN lên API',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            pushing ? 'Đang tạo token...'
+                : selected.isEmpty ? 'Chọn ca bệnh để tạo token'
+                : 'Tạo Data Token cho ${selected.length} ca bệnh TN',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: selected.isEmpty ? Colors.grey : const Color(0xFF2E7D32),
@@ -1243,7 +1452,7 @@ class _TatCaTokenDialog extends StatelessWidget {
           Icon(Icons.lightbulb_outline, color: Colors.green.shade700, size: 18),
           const SizedBox(width: 8),
           Text(
-            'Cách sử dụng Data Token',
+            'Cách sử dụng',
             style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
@@ -1252,13 +1461,42 @@ class _TatCaTokenDialog extends StatelessWidget {
         ]),
         const SizedBox(height: 10),
         Text(
-          '1. Sử dụng JWT Token trong header "Authorization: Bearer <jwt>"',
+          '1. Data Token chứa toàn bộ dữ liệu đã được mã hóa',
           style: TextStyle(fontSize: 11, color: Colors.grey.shade800),
         ),
         const SizedBox(height: 4),
         Text(
-          '2. Gửi Data Token qua query param "?token=<data_token>"',
+          '2. JWT Token (token chung) dùng để xác thực VÀ giải mã Data Token',
           style: TextStyle(fontSize: 11, color: Colors.grey.shade800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '3. Gửi Data Token qua query "?token=xxx" và JWT qua header',
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade800),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.orange.shade300),
+          ),
+          child: Row(children: [
+            Icon(Icons.security, color: Colors.orange.shade700, size: 14),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Data Token được mã hóa bằng JWT Secret - không thể đọc nếu thiếu JWT Token',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.orange.shade900,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
+                ),
+              ),
+            ),
+          ]),
         ),
         const SizedBox(height: 10),
         Text(

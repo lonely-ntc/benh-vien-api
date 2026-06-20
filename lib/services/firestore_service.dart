@@ -139,6 +139,8 @@ class FirestoreService {
     final soThuTu = await _laysoThuTuTiepTheo();
     final data = benhNhan.toFirestore();
     data['soThuTu'] = soThuTu;
+    // Tự động tạo benhNhanId từ soThuTu (VD: BN0001, BN0301)
+    data['benhNhanId'] = 'BN${soThuTu.toString().padLeft(4, '0')}';
     data['ngayDangKy'] = FieldValue.serverTimestamp();
     data['ngayCapNhat'] = FieldValue.serverTimestamp();
     final docRef = await _db.collection(_collection).add(data);

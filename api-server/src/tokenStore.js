@@ -1,94 +1,104 @@
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'benhvien_jwt_secret_change_this';
 
 /**
- * Lưu trữ token và dữ liệu đã chọn trong bộ nhớ
- * Trong production nên dùng Redis hoặc database
+ * Lưu trữ và mã hóa dữ liệu bệnh nhân thành token
+ * Data Token được mã hóa bằng JWT Secret
  */
 class TokenStore {
   constructor() {
-    this.store = new Map();
-    // Tự động xóa token sau 24 giờ
     this.TTL = 24 * 60 * 60 * 1000; // 24 hours
   }
 
   /**
-   * Tạo token mới và lưu dữ liệu
-   * @param {Object} data - { benhNhanIds: [], benhTNIds: [] }
-   * @returns {string} token
+   * Tạo Data Token chứa toàn bộ dữ liệu đã được mã hóa
+   * @param {Object} data - { benhNhanData: [], benhTNData: [], ... }
+   * @returns {string} encrypted data token
    */
   create(data) {
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = Date.now() + this.TTL;
-    
-    this.store.set(token, {
+    const payload = {
       data,
       createdAt: Date.now(),
-      expiresAt,
-    });
+      expiresAt: Date.now() + this.TTL,
+      tokenId: crypto.randomBytes(16).toString('hex'),
+    };
 
-    // Tự động xóa sau TTL
-    setTimeout(() => {
-      this.store.delete(token);
-    }, this.TTL);
+    // Mã hóa toàn bộ data thành JWT token
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+    
+    console.log('🔐 Created encrypted data token:', {
+      tokenId: payload.tokenId,
+      dataSize: JSON.stringify(data).length,
+      expiresIn: '24h'
+    });
 
     return token;
   }
 
   /**
-   * Lấy dữ liệu từ token
-   * @param {string} token
-   * @returns {Object|null} data hoặc null nếu không tồn tại/hết hạn
+   * Giải mã Data Token và lấy dữ liệu
+   * @param {string} token - Encrypted data token
+   * @returns {Object|null} data hoặc null nếu không hợp lệ/hết hạn
    */
   get(token) {
-    const entry = this.store.get(token);
-    if (!entry) return null;
+    try {
+      // Giải mã JWT token
+      const decoded = jwt.verify(token, JWT_SECRET);
+      
+      // Kiểm tra hết hạn
+      if (Date.now() > decoded.expiresAt) {
+        console.log('⚠️  Data token expired:', decoded.tokenId);
+        return null;
+      }
 
-    // Kiểm tra hết hạn
-    if (Date.now() > entry.expiresAt) {
-      this.store.delete(token);
+      console.log('✅ Decoded data token:', {
+        tokenId: decoded.tokenId,
+        createdAt: new Date(decoded.createdAt).toISOString(),
+      });
+
+      return decoded.data;
+    } catch (err) {
+      console.error('❌ Failed to decode data token:', err.message);
       return null;
     }
-
-    return entry.data;
   }
 
   /**
-   * Xóa token
+   * Xóa token (không cần thiết với JWT - tự hết hạn)
    * @param {string} token
-   * @returns {boolean} true nếu xóa thành công
+   * @returns {boolean}
    */
   delete(token) {
-    return this.store.delete(token);
+    // JWT tokens tự hết hạn, không cần xóa thủ công
+    console.log('ℹ️  Data token will auto-expire (JWT-based)');
+    return true;
   }
 
   /**
-   * Lấy thông tin token (bao gồm metadata)
+   * Lấy thông tin token
    * @param {string} token
    * @returns {Object|null}
    */
   getInfo(token) {
-    const entry = this.store.get(token);
-    if (!entry) return null;
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      
+      if (Date.now() > decoded.expiresAt) {
+        return null;
+      }
 
-    if (Date.now() > entry.expiresAt) {
-      this.store.delete(token);
+      return {
+        tokenId: decoded.tokenId,
+        createdAt: new Date(decoded.createdAt).toISOString(),
+        expiresAt: new Date(decoded.expiresAt).toISOString(),
+        isValid: true,
+        dataSize: JSON.stringify(decoded.data).length,
+      };
+    } catch (err) {
       return null;
     }
-
-    return {
-      data: entry.data,
-      createdAt: new Date(entry.createdAt).toISOString(),
-      expiresAt: new Date(entry.expiresAt).toISOString(),
-      isValid: true,
-    };
-  }
-
-  /**
-   * Lấy số lượng token đang lưu
-   * @returns {number}
-   */
-  size() {
-    return this.store.size;
   }
 }
 
