@@ -8,9 +8,23 @@ import '../services/firestore_service.dart';
 import '../services/benh_truyen_nhiem_service.dart';
 import '../services/api_push_service.dart';
 
-const String _apiBaseUrl = 'http://10.0.2.2:3000'; // Android emulator
-// const String _apiBaseUrl = 'http://localhost:3000'; // iOS simulator
-// const String _apiBaseUrl = 'https://benh-vien-api.onrender.com'; // Production
+// ═══ CẤU HÌNH URL API ═════════════════════════════════════════════════════
+// Chọn 1 trong các URL sau tùy theo môi trường test:
+
+// 1. Android Emulator
+const String _apiBaseUrl = 'http://10.0.2.2:3000';
+
+// 2. iOS Simulator (uncomment dòng dưới và comment dòng trên)
+// const String _apiBaseUrl = 'http://localhost:3000';
+
+// 3. Physical Device - Thay <YOUR_COMPUTER_IP> bằng IP máy tính (uncomment dòng dưới)
+// Tìm IP: Windows (ipconfig), Mac/Linux (ifconfig)
+// const String _apiBaseUrl = 'http://192.168.1.100:3000';
+
+// 4. Production (uncomment khi deploy)
+// const String _apiBaseUrl = 'https://benh-vien-api.onrender.com';
+
+// ═══════════════════════════════════════════════════════════════════════════
 
 class DayDuLieuScreen extends StatefulWidget {
   const DayDuLieuScreen({super.key});
