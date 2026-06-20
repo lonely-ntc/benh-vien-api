@@ -111,7 +111,13 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
 
   // ── Tạo data token cho bệnh nhân đã chọn ──────────────────────────────────
   Future<String?> _taoDataTokenBN(List<BenhNhan> ds) async {
-    if (_token == null) return null;
+    if (_token == null) {
+      print('❌ Token chưa có, không thể tạo data token');
+      return null;
+    }
+    
+    print('📋 Bệnh nhân đã chọn: ${_selBN.length}');
+    
     // Sử dụng benhNhanId (mã nghiệp vụ) thay vì Firestore document ID
     final ids = ds
         .where((e) => _selBN.contains(e.id))
@@ -121,10 +127,15 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
     
     if (ids.isEmpty) {
       print('⚠️ Không có bệnh nhân nào có benhNhanId');
+      print('   Tất cả bệnh nhân đã chọn:');
+      ds.where((e) => _selBN.contains(e.id)).forEach((bn) {
+        print('   - ${bn.hoTen}: benhNhanId = ${bn.benhNhanId}');
+      });
       return null;
     }
 
-    print('🔍 Debug - Tạo token với benhNhanIds: $ids');
+    print('🔍 Tạo token với ${ids.length} benhNhanIds: $ids');
+    print('📡 Gửi request đến: $_apiBaseUrl/api/benhNhan/byIds');
 
     try {
       final resp = await http.post(
@@ -136,21 +147,43 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
         body: jsonEncode({'benhNhanIds': ids, 'benhTNIds': []}),
       ).timeout(const Duration(seconds: 30));
 
+      print('✅ Response status: ${resp.statusCode}');
+      print('📦 Response body: ${resp.body}');
+
+      if (resp.statusCode != 200) {
+        print('❌ HTTP Error: ${resp.statusCode}');
+        return null;
+      }
+
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      print('🔍 Debug - Response từ /byIds: $body');
       
       if (body['success'] == true && body['token'] != null) {
+        print('✅ Data token đã tạo thành công');
         return body['token'] as String;
+      } else {
+        print('❌ API trả về success=false hoặc không có token');
+        print('   Message: ${body['message']}');
       }
     } catch (e) {
-      print('❌ Debug - Lỗi tạo token: $e');
+      print('❌ Lỗi khi tạo token: $e');
+      if (e.toString().contains('TimeoutException')) {
+        print('   → Request timeout, kiểm tra API server có đang chạy không');
+      } else if (e.toString().contains('SocketException')) {
+        print('   → Không kết nối được API, kiểm tra URL: $_apiBaseUrl');
+      }
     }
     return null;
   }
 
   // ── Tạo data token cho bệnh truyền nhiễm đã chọn ──────────────────────────
   Future<String?> _taoDataTokenBTN(List<BenhTruyenNhiem> ds) async {
-    if (_token == null) return null;
+    if (_token == null) {
+      print('❌ Token chưa có, không thể tạo data token');
+      return null;
+    }
+    
+    print('📋 Ca bệnh TN đã chọn: ${_selBTN.length}');
+    
     // Sử dụng benhAnId (mã nghiệp vụ) thay vì Firestore document ID
     final ids = ds
         .where((e) => _selBTN.contains(e.id))
@@ -160,8 +193,15 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
     
     if (ids.isEmpty) {
       print('⚠️ Không có ca bệnh nào có benhAnId');
+      print('   Tất cả ca bệnh đã chọn:');
+      ds.where((e) => _selBTN.contains(e.id)).forEach((btn) {
+        print('   - ${btn.hoTen}: benhAnId = ${btn.benhAnId}');
+      });
       return null;
     }
+
+    print('🔍 Tạo token với ${ids.length} benhAnIds: $ids');
+    print('📡 Gửi request đến: $_apiBaseUrl/api/benhTruyenNhiem/byIds');
 
     try {
       final resp = await http.post(
@@ -173,12 +213,30 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
         body: jsonEncode({'benhNhanIds': [], 'benhTNIds': ids}),
       ).timeout(const Duration(seconds: 30));
 
+      print('✅ Response status: ${resp.statusCode}');
+      print('📦 Response body: ${resp.body}');
+
+      if (resp.statusCode != 200) {
+        print('❌ HTTP Error: ${resp.statusCode}');
+        return null;
+      }
+
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      
       if (body['success'] == true && body['token'] != null) {
+        print('✅ Data token đã tạo thành công');
         return body['token'] as String;
+      } else {
+        print('❌ API trả về success=false hoặc không có token');
+        print('   Message: ${body['message']}');
       }
     } catch (e) {
-      // Ignore error, return null
+      print('❌ Lỗi khi tạo token: $e');
+      if (e.toString().contains('TimeoutException')) {
+        print('   → Request timeout, kiểm tra API server có đang chạy không');
+      } else if (e.toString().contains('SocketException')) {
+        print('   → Không kết nối được API, kiểm tra URL: $_apiBaseUrl');
+      }
     }
     return null;
   }
@@ -199,7 +257,6 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
 
     // Tạo data token
     String? dataToken;
-    Map<String, dynamic>? createTokenResponse;
     List<String> sentIds = [];
     
     if (isBenh) {
