@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'lay_api_token_screen.dart';
 
 class QuanLyTaiKhoanScreen extends StatefulWidget {
   const QuanLyTaiKhoanScreen({super.key});
@@ -75,15 +74,6 @@ class _QuanLyTaiKhoanScreenState extends State<QuanLyTaiKhoanScreen> {
           Text('Quản lý tài khoản', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         ]),
         actions: [
-          // Nút lấy API Token
-          IconButton(
-            icon: const Icon(Icons.token, color: Colors.white),
-            tooltip: 'Lấy API Token',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const LayApiTokenScreen()),
-            ),
-          ),
           // Badge tổng số tài khoản
           StreamBuilder<List<Map<String, dynamic>>>(
             stream: AuthService().streamDanhSachTaiKhoan(),

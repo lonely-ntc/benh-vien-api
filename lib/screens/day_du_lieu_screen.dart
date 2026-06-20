@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/benh_nhan.dart';
 import '../models/benh_truyen_nhiem.dart';
 import '../services/firestore_service.dart';
 import '../services/benh_truyen_nhiem_service.dart';
 import '../services/api_push_service.dart';
-import 'lay_api_token_screen.dart';
+
+const String _apiBaseUrl = 'https://benh-vien-api.onrender.com';
 
 class DayDuLieuScreen extends StatefulWidget {
   const DayDuLieuScreen({super.key});
@@ -24,7 +26,7 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
   final _mkCtrl   = TextEditingController();
   bool _hienMK       = false;
   bool _layingToken  = false;
-  String? _token;
+  String? _token;        // JWT Token chung
   String? _tokenError;
 
   // ── Bệnh nhân ────────────────────────────────────────────────────────────
@@ -32,14 +34,14 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
   bool _pushingBN             = false;
   List<PushKetQua> _ketQuaBN  = [];
   bool _hienKetQuaBN          = false;
-  List<BenhNhan> _cachedBenhNhan = []; // cache để truyền sang LayApiTokenScreen
+  List<BenhNhan> _cachedBenhNhan = [];
 
   // ── Bệnh truyền nhiễm ────────────────────────────────────────────────────
   final Set<String> _selBTN   = {};
   bool _pushingBTN            = false;
   List<PushKetQua> _ketQuaBTN = [];
   bool _hienKetQuaBTN         = false;
-  List<BenhTruyenNhiem> _cachedBTN = []; // cache để truyền sang LayApiTokenScreen
+  List<BenhTruyenNhiem> _cachedBTN = [];
 
   @override
   void initState() {
@@ -105,123 +107,125 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
   void _nhacChon([String loai = 'bệnh nhân']) => ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Chọn ít nhất 1 $loai'), backgroundColor: Colors.orange));
 
-  // ── Xem payload JSON để copy & kiểm tra ────────────────────────────────────
-  void _xemPayloadBTN(List<BenhTruyenNhiem> ds) {
-    if (_selBTN.isEmpty) { _nhacChon('ca bệnh'); return; }
-    final items = ds.where((e) => _selBTN.contains(e.id)).toList();
-    _hienDialogPayload(
-      context,
-      title: 'Payload bệnh truyền nhiễm (${items.length} ca)',
-      payloads: items.map((e) => e.toApiPayload()).toList(),
-      readableList: items.map((e) => _btnToReadable(e)).toList(),
-      token: _token,
-    );
+  // ── Tạo data token cho bệnh nhân đã chọn ──────────────────────────────────
+  Future<String?> _taoDataTokenBN(List<BenhNhan> ds) async {
+    if (_token == null) return null;
+    final ids = ds.where((e) => _selBN.contains(e.id)).map((e) => e.id).toList();
+    if (ids.isEmpty) return null;
+
+    try {
+      final resp = await http.post(
+        Uri.parse('$_apiBaseUrl/api/benhNhan/byIds'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+        body: jsonEncode({'benhNhanIds': ids, 'benhTNIds': []}),
+      ).timeout(const Duration(seconds: 30));
+
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (body['success'] == true && body['token'] != null) {
+        return body['token'] as String;
+      }
+    } catch (e) {
+      // Ignore error, return null
+    }
+    return null;
   }
 
-  void _xemPayloadBN(List<BenhNhan> ds) {
-    if (_selBN.isEmpty) { _nhacChon(); return; }
-    final items = ds.where((e) => _selBN.contains(e.id)).toList();
-    _hienDialogPayload(
-      context,
-      title: 'Payload bệnh nhân (${items.length} người)',
-      payloads: items.map((e) => e.toApiPayload()).toList(),
-      readableList: items.map((e) => _bnToReadable(e)).toList(),
-      token: _token,
-    );
+  // ── Tạo data token cho bệnh truyền nhiễm đã chọn ──────────────────────────
+  Future<String?> _taoDataTokenBTN(List<BenhTruyenNhiem> ds) async {
+    if (_token == null) return null;
+    final ids = ds.where((e) => _selBTN.contains(e.id)).map((e) => e.id).toList();
+    if (ids.isEmpty) return null;
+
+    try {
+      final resp = await http.post(
+        Uri.parse('$_apiBaseUrl/api/benhTruyenNhiem/byIds'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+        body: jsonEncode({'benhNhanIds': [], 'benhTNIds': ids}),
+      ).timeout(const Duration(seconds: 30));
+
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (body['success'] == true && body['token'] != null) {
+        return body['token'] as String;
+      }
+    } catch (e) {
+      // Ignore error, return null
+    }
+    return null;
   }
 
-  /// Tạo map dễ đọc cho BTN — hiển thị cả id lẫn tên
-  static Map<String, String?> _btnToReadable(BenhTruyenNhiem e) => {
-    'Họ tên':           e.hoTen,
-    'Ngày sinh':        e.ngaySinh,
-    'Giới tính':        e.gioiTinhItem != null ? '${e.gioiTinhItem!.id} – ${e.gioiTinhItem!.name}' : null,
-    'Dân tộc':          e.danTocItem != null ? '${e.danTocItem!.id} – ${e.danTocItem!.name}' : null,
-    'CCCD/CMND':        e.maDinhDanhCaNhan,
-    'Người bảo hộ':     e.tenNguoiBaoHo,
-    'SĐT':              e.sdt,
-    'Có thai':          e.coThaiItem != null ? '${e.coThaiItem!.id} – ${e.coThaiItem!.name}' : null,
-    'Nghề nghiệp':      e.ngheNghiep,
-    'Nơi ở hiện nay':   e.noiOHienNay,
-    'Tỉnh nơi ở':       e.cityIdItem != null ? '${e.cityIdItem!.id} – ${e.cityIdItem!.name}' : null,
-    'Tỉnh nơi làm/học': e.cityIdHocItem != null ? '${e.cityIdHocItem!.id} – ${e.cityIdHocItem!.name}' : null,
-    'Cơ sở điều trị':   e.coSoDieuTriItem != null ? '${e.coSoDieuTriItem!.id} – ${e.coSoDieuTriItem!.name}' : null,
-    'Tỉnh CSDT':        e.cityIdCSDTItem != null ? '${e.cityIdCSDTItem!.id} – ${e.cityIdCSDTItem!.name}' : null,
-    'Hình thức ĐT':     e.hinhThucDieuTriItem != null ? '${e.hinhThucDieuTriItem!.id} – ${e.hinhThucDieuTriItem!.name}' : null,
-    'Chẩn đoán bệnh':   e.chanDoanBenhItem != null ? '${e.chanDoanBenhItem!.id} – ${e.chanDoanBenhItem!.name}' : null,
-    'Phân độ bệnh':     e.phanDoBenhItem != null ? '${e.phanDoBenhItem!.id} – ${e.phanDoBenhItem!.name}' : null,
-    'Thông tin ĐT':     e.thongTinDieuTriItem?.name,
-    'Bệnh nền':         e.benhNenKemTheoItem != null ? '${e.benhNenKemTheoItem!.id} – ${e.benhNenKemTheoItem!.name}' : null,
-    'Phân loại CĐ':     e.phanLoaiChanDoanItem != null ? '${e.phanLoaiChanDoanItem!.id} – ${e.phanLoaiChanDoanItem!.name}' : null,
-    'Lấy mẫu XN':       e.layMauXNItem?.name,
-    'Loại bệnh phẩm':   e.loaiBenhPhamItem != null ? '${e.loaiBenhPhamItem!.id} – ${e.loaiBenhPhamItem!.name}' : null,
-    'Loại XN':          e.loaiXNItem != null ? '${e.loaiXNItem!.id} – ${e.loaiXNItem!.name}' : null,
-    'Kết quả XN':       e.ketQuaXNItem != null ? '${e.ketQuaXNItem!.id} – ${e.ketQuaXNItem!.name}' : null,
-    'Tình trạng tiêm':  e.tinhTrangTiemItem != null ? '${e.tinhTrangTiemItem!.id} – ${e.tinhTrangTiemItem!.name}' : null,
-    'Ngày khởi phát':   e.ngayKhoiPhat,
-    'Ngày nhập viện':   e.ngayNhapVien,
-    'Ngày XV/TV/CV':    e.ngayXVTVCV,
-    'Người báo cáo':    e.nguoiBaoCao,
-    'SĐT báo cáo':      e.sdtNguoiBaoCao,
-    'Ngày báo cáo':     e.ngayBaoCao,
-  };
-
-  /// Tạo map dễ đọc cho BenhNhan
-  static Map<String, String?> _bnToReadable(BenhNhan e) => {
-    'Họ tên':           e.hoTen,
-    'Ngày sinh':        e.ngaySinh,
-    'Giới tính':        e.gioiTinhItem != null ? '${e.gioiTinhItem!.id} – ${e.gioiTinhItem!.name}' : null,
-    'Dân tộc':          e.danTocItem != null ? '${e.danTocItem!.id} – ${e.danTocItem!.name}' : null,
-    'CCCD/CMND':        e.cccd,
-    'SĐT':              e.soDienThoai,
-    'Bảo hiểm YT':      e.baoHiemYTe,
-    'Địa chỉ':          e.diaChi,
-    'Tỉnh':             e.tinhItem != null ? '${e.tinhItem!.id} – ${e.tinhItem!.name}' : null,
-    'Bệnh nền':         e.benhNenItem != null ? '${e.benhNenItem!.id} – ${e.benhNenItem!.name}' : null,
-    'Bệnh TN':          e.benhTruyenNhiemItem != null ? '${e.benhTruyenNhiemItem!.id} – ${e.benhTruyenNhiemItem!.name}' : null,
-    'Tiêm chủng':       e.tinhTrangTiemChungItem != null ? '${e.tinhTrangTiemChungItem!.id} – ${e.tinhTrangTiemChungItem!.name}' : null,
-    'Chẩn đoán':        e.chanDoanBenhItem != null ? '${e.chanDoanBenhItem!.id} – ${e.chanDoanBenhItem!.name}' : null,
-    'Hình thức ĐT':     e.hinhThucDieuTriItem != null ? '${e.hinhThucDieuTriItem!.id} – ${e.hinhThucDieuTriItem!.name}' : null,
-    'Phân loại CĐ':     e.phanLoaiChanDoanItem != null ? '${e.phanLoaiChanDoanItem!.id} – ${e.phanLoaiChanDoanItem!.name}' : null,
-    'Loại bệnh phẩm':   e.loaiBenhPhamItem != null ? '${e.loaiBenhPhamItem!.id} – ${e.loaiBenhPhamItem!.name}' : null,
-    'Kết quả XN':       e.ketQuaXetNghiemItem != null ? '${e.ketQuaXetNghiemItem!.id} – ${e.ketQuaXetNghiemItem!.name}' : null,
-    'Cơ sở báo cáo':    e.coSoBaoCaoItem != null ? '${e.coSoBaoCaoItem!.id} – ${e.coSoBaoCaoItem!.name}' : null,
-    'Cơ sở điều trị':   e.coSoDieuTriItem != null ? '${e.coSoDieuTriItem!.id} – ${e.coSoDieuTriItem!.name}' : null,
-  };
-
-  static void _hienDialogPayload(
-    BuildContext context, {
-    required String title,
-    required List<Map<String, dynamic>> payloads,
-    List<Map<String, String?>>? readableList,
-    String? token,
-  }) {
-    // Làm sạch map để serialize được
-    Map<String, dynamic> clean(Map<String, dynamic> m) {
-      return Map.fromEntries(m.entries.map((e) {
-        final v = e.value;
-        if (v == null) return MapEntry(e.key, null);
-        if (v is String || v is int || v is double || v is bool) return MapEntry(e.key, v);
-        if (v is Map) return MapEntry(e.key, clean(v.cast<String, dynamic>()));
-        if (v is List) return MapEntry(e.key, v.map((i) => i is Map ? clean(i.cast<String, dynamic>()) : i).toList());
-        return MapEntry(e.key, v.toString());
-      }));
+  // ── Xem tất cả token (JWT + Data Token) ───────────────────────────────────
+  Future<void> _xemTatCaToken(BuildContext context, dynamic ds, {required bool isBenh}) async {
+    if (_token == null) {
+      _nhacToken();
+      return;
     }
 
-    final cleanPayloads = payloads.map(clean).toList();
-    final jsonText = payloads.length == 1
-        ? const JsonEncoder.withIndent('  ').convert(cleanPayloads.first)
-        : const JsonEncoder.withIndent('  ').convert(cleanPayloads);
-
+    // Show loading dialog
     showDialog(
       context: context,
-      builder: (_) => _PayloadDialog(
-        title: title,
-        jsonText: jsonText,
-        readableList: readableList,
-        token: token,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Tạo data token
+    String? dataToken;
+    if (isBenh) {
+      dataToken = await _taoDataTokenBN(ds as List<BenhNhan>);
+    } else {
+      dataToken = await _taoDataTokenBTN(ds as List<BenhTruyenNhiem>);
+    }
+
+    // Close loading dialog
+    if (context.mounted) Navigator.pop(context);
+
+    // Show token dialog
+    if (context.mounted) {
+      final selectedItems = isBenh
+          ? (ds as List<BenhNhan>).where((e) => _selBN.contains(e.id)).toList()
+          : (ds as List<BenhTruyenNhiem>).where((e) => _selBTN.contains(e.id)).toList();
+      
+      _hienDialogTatCaToken(
+        context,
+        jwtToken: _token!,
+        dataToken: dataToken,
+        selectedCount: isBenh ? _selBN.length : _selBTN.length,
+        loaiDuLieu: isBenh ? 'bệnh nhân' : 'ca bệnh TN',
+        selectedItems: selectedItems,
+        isBenh: isBenh,
+      );
+    }
+  }
+
+  static void _hienDialogTatCaToken(
+    BuildContext context, {
+    required String jwtToken,
+    String? dataToken,
+    required int selectedCount,
+    required String loaiDuLieu,
+    required List<dynamic> selectedItems,
+    required bool isBenh,
+  }) {
+    showDialog(
+      context: context,
+      builder: (_) => _TatCaTokenDialog(
+        jwtToken: jwtToken,
+        dataToken: dataToken,
+        selectedCount: selectedCount,
+        loaiDuLieu: loaiDuLieu,
+        selectedItems: selectedItems,
+        isBenh: isBenh,
       ),
     );
   }
+
+  // ── Xem payload JSON để copy & kiểm tra ────────────────────────────────────
+
 
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
@@ -236,29 +240,6 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
           SizedBox(width: 8),
           Text('Đẩy dữ liệu lên API', style: TextStyle(fontWeight: FontWeight.bold)),
         ]),
-        actions: [
-          // Nút mở màn hình API Token với dữ liệu đang chọn
-          IconButton(
-            icon: const Icon(Icons.token, size: 22),
-            tooltip: 'Xem API Token & Requests',
-            onPressed: () {
-              // Lấy danh sách đã chọn từ state hiện tại
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LayApiTokenScreen(
-                    selectedBenhNhan: _cachedBenhNhan
-                        .where((e) => _selBN.contains(e.id))
-                        .toList(),
-                    selectedBTN: _cachedBTN
-                        .where((e) => _selBTN.contains(e.id))
-                        .toList(),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
         bottom: TabBar(
           controller: _tabCtrl,
           indicatorColor: Colors.white,
@@ -287,7 +268,7 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
                 ketQua: _ketQuaBN,
                 hienKetQua: _hienKetQuaBN,
                 onDay: _dayBN,
-                onXemPayload: _xemPayloadBN,
+                onXemToken: (ds) => _xemTatCaToken(context, ds, isBenh: true),
                 onToggle: (id) => setState(() {
                   if (_selBN.contains(id)) { _selBN.remove(id); }
                   else { _selBN.add(id); }
@@ -311,7 +292,7 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
                 ketQua: _ketQuaBTN,
                 hienKetQua: _hienKetQuaBTN,
                 onDay: _dayBTN,
-                onXemPayload: _xemPayloadBTN,
+                onXemToken: (ds) => _xemTatCaToken(context, ds, isBenh: false),
                 onToggle: (id) => setState(() {
                   if (_selBTN.contains(id)) { _selBTN.remove(id); }
                   else { _selBTN.add(id); }
@@ -396,9 +377,8 @@ class _DayDuLieuScreenState extends State<DayDuLieuScreen>
               borderRadius: BorderRadius.circular(8),
               onTap: () => showDialog(
                 context: context,
-                builder: (_) => _PayloadDialog(
+                builder: (_) => _TokenDialog(
                   title: 'JWT Token hiện tại',
-                  jsonText: '{ "token": "${_token!.substring(0, 20)}..." }',
                   token: _token,
                 ),
               ),
@@ -450,7 +430,7 @@ class _TabBenhNhan extends StatelessWidget {
   final List<PushKetQua> ketQua;
   final bool hienKetQua;
   final void Function(List<BenhNhan>) onDay;
-  final void Function(List<BenhNhan>) onXemPayload;
+  final void Function(List<BenhNhan>) onXemToken;
   final void Function(String) onToggle;
   final void Function(List<BenhNhan>) onChonTatCa;
   final void Function(List<BenhNhan>) onDataLoaded;
@@ -458,7 +438,7 @@ class _TabBenhNhan extends StatelessWidget {
   const _TabBenhNhan({
     required this.token, required this.selected, required this.pushing,
     required this.ketQua, required this.hienKetQua, required this.onDay,
-    required this.onXemPayload,
+    required this.onXemToken,
     required this.onToggle, required this.onChonTatCa,
     required this.onDataLoaded,
   });
@@ -503,30 +483,33 @@ class _TabBenhNhan extends StatelessWidget {
               ),
       ),
       if (hienKetQua && ketQua.isNotEmpty) _ketQuaBox(ketQua),
-      _dayButton(context, ds),
+      _dayButton(context, ds, onXemToken),
     ]);
   }
 
-  Widget _dayButton(BuildContext context, List<BenhNhan> ds) => Container(
+  Widget _dayButton(BuildContext context, List<BenhNhan> ds, void Function(List<BenhNhan>) onXemToken) => Container(
     padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
     color: Colors.white,
     child: Column(children: [
-      // Nút Xem Payload
+      // Nút Tạo Data Token và Xem tất cả Token
       if (selected.isNotEmpty) ...[
-        SizedBox(
-          width: double.infinity, height: 40,
-          child: OutlinedButton.icon(
-            onPressed: () => onXemPayload(ds),
-            icon: const Icon(Icons.data_object, size: 16),
-            label: Text('Xem JSON payload (${selected.length})',
-                style: const TextStyle(fontSize: 13)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF1565C0),
-              side: const BorderSide(color: Color(0xFF1565C0)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        Row(children: [
+          Expanded(
+            child: SizedBox(
+              height: 40,
+              child: ElevatedButton.icon(
+                onPressed: () => onXemToken(ds),
+                icon: const Icon(Icons.token, size: 16),
+                label: const Text('Xem Token', style: TextStyle(fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6A1B9A),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
             ),
           ),
-        ),
+        ]),
         const SizedBox(height: 6),
       ],
       SizedBox(
@@ -562,7 +545,7 @@ class _TabBTN extends StatelessWidget {
   final List<PushKetQua> ketQua;
   final bool hienKetQua;
   final void Function(List<BenhTruyenNhiem>) onDay;
-  final void Function(List<BenhTruyenNhiem>) onXemPayload;
+  final void Function(List<BenhTruyenNhiem>) onXemToken;
   final void Function(String) onToggle;
   final void Function(List<BenhTruyenNhiem>) onChonTatCa;
   final void Function(List<BenhTruyenNhiem>) onDataLoaded;
@@ -570,7 +553,7 @@ class _TabBTN extends StatelessWidget {
   const _TabBTN({
     required this.token, required this.selected, required this.pushing,
     required this.ketQua, required this.hienKetQua, required this.onDay,
-    required this.onXemPayload,
+    required this.onXemToken,
     required this.onToggle, required this.onChonTatCa,
     required this.onDataLoaded,
   });
@@ -616,30 +599,33 @@ class _TabBTN extends StatelessWidget {
               ),
       ),
       if (hienKetQua && ketQua.isNotEmpty) _ketQuaBox(ketQua),
-      _dayButton(ds),
+      _dayButton(context, ds, onXemToken),
     ]);
   }
 
-  Widget _dayButton(List<BenhTruyenNhiem> ds) => Container(
+  Widget _dayButton(BuildContext context, List<BenhTruyenNhiem> ds, void Function(List<BenhTruyenNhiem>) onXemToken) => Container(
     padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
     color: Colors.white,
     child: Column(children: [
-      // Nút Xem Payload
+      // Nút Tạo Data Token và Xem tất cả Token
       if (selected.isNotEmpty) ...[
-        SizedBox(
-          width: double.infinity, height: 40,
-          child: OutlinedButton.icon(
-            onPressed: () => onXemPayload(ds),
-            icon: const Icon(Icons.data_object, size: 16),
-            label: Text('Xem JSON payload (${selected.length})',
-                style: const TextStyle(fontSize: 13)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF2E7D32),
-              side: const BorderSide(color: Color(0xFF2E7D32)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        Row(children: [
+          Expanded(
+            child: SizedBox(
+              height: 40,
+              child: ElevatedButton.icon(
+                onPressed: () => onXemToken(ds),
+                icon: const Icon(Icons.token, size: 16),
+                label: const Text('Xem Token', style: TextStyle(fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6A1B9A),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
             ),
           ),
-        ),
+        ]),
         const SizedBox(height: 6),
       ],
       SizedBox(
@@ -783,52 +769,419 @@ class _ItemCard extends StatelessWidget {
   }
 }
 
-// ── Dialog hiển thị Payload JSON + Token ────────────────────────────────────
+// ── Dialog hiển thị cả JWT Token và Data Token ─────────────────────────────
 
-class _PayloadDialog extends StatefulWidget {
-  final String title;
-  final String jsonText;
-  final List<Map<String, String?>>? readableList;
-  final String? token;
-  const _PayloadDialog({
-    required this.title,
-    required this.jsonText,
-    this.readableList,
-    this.token,
+class _TatCaTokenDialog extends StatelessWidget {
+  final String jwtToken;
+  final String? dataToken;
+  final int selectedCount;
+  final String loaiDuLieu;
+  final List<dynamic> selectedItems;
+  final bool isBenh;
+
+  const _TatCaTokenDialog({
+    required this.jwtToken,
+    this.dataToken,
+    required this.selectedCount,
+    required this.loaiDuLieu,
+    required this.selectedItems,
+    required this.isBenh,
   });
-  @override
-  State<_PayloadDialog> createState() => _PayloadDialogState();
-}
 
-class _PayloadDialogState extends State<_PayloadDialog>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tab;
-  bool _tokenVisible = false;
-
-  int get _tabCount {
-    int n = 1; // JSON
-    if (widget.readableList != null) n++; // Dễ đọc
-    if (widget.token != null) n++; // Token
-    return n;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: _tabCount, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tab.dispose();
-    super.dispose();
-  }
-
-  void _copy(String text, String label) {
+  void _copy(BuildContext context, String text, String label) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(children: [
-        const Icon(Icons.copy, color: Colors.white, size: 16),
+        const Icon(Icons.check_circle, color: Colors.white, size: 16),
+        const SizedBox(width: 8),
+        Text('Đã copy $label'),
+      ]),
+      backgroundColor: Colors.green.shade700,
+      duration: const Duration(seconds: 2),
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+        child: Column(children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(children: [
+              const Icon(Icons.vpn_key, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'API Tokens',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white70, size: 24),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+              ),
+            ]),
+          ),
+
+          // Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(children: [
+                // ── 1. JWT Token (Token chung) ──────────────────────────
+                _buildTokenSection(
+                  context,
+                  title: '1. JWT Token (Token chung)',
+                  description: 'Token xác thực cho tất cả các API calls',
+                  token: jwtToken,
+                  icon: Icons.admin_panel_settings,
+                  color: const Color(0xFF1565C0),
+                  showBearer: true,
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── 2. Data Token (Token cho dữ liệu đã chọn) ────────────
+                if (dataToken != null) ...[
+                  _buildTokenSection(
+                    context,
+                    title: '2. Data Token (Token dữ liệu)',
+                    description: 'Token để lấy $selectedCount $loaiDuLieu đã chọn',
+                    token: dataToken!,
+                    icon: Icons.dataset,
+                    color: const Color(0xFF2E7D32),
+                    showBearer: false,
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Danh sách đã chọn
+                  _buildSelectedList(context),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Hướng dẫn sử dụng
+                  _buildUsageGuide(context),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Row(children: [
+                      Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Không thể tạo data token. Vui lòng thử lại.',
+                          style: TextStyle(fontSize: 13, height: 1.4),
+                        ),
+                      ),
+                    ]),
+                  ),
+                ],
+              ]),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildTokenSection(
+    BuildContext context, {
+    required String title,
+    required String description,
+    required String token,
+    required IconData icon,
+    required Color color,
+    required bool showBearer,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withAlpha((0.05 * 255).round()),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withAlpha((0.3 * 255).round())),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Title
+        Row(children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title,
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14, color: color)),
+              const SizedBox(height: 2),
+              Text(description,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+            ]),
+          ),
+        ]),
+
+        const SizedBox(height: 12),
+
+        // Token display
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A2E),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: SelectableText(
+            token,
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 10,
+              color: Color(0xFF00FF88),
+              height: 1.5,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        // Copy buttons
+        Row(children: [
+          Expanded(
+            child: SizedBox(
+              height: 36,
+              child: ElevatedButton.icon(
+                onPressed: () => _copy(context, token, 'Token'),
+                icon: const Icon(Icons.copy, size: 14),
+                label: const Text('Copy', style: TextStyle(fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: color,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+          ),
+          if (showBearer) ...[
+            const SizedBox(width: 8),
+            Expanded(
+              child: SizedBox(
+                height: 36,
+                child: OutlinedButton.icon(
+                  onPressed: () => _copy(context, 'Bearer $token', 'Bearer Token'),
+                  icon: const Icon(Icons.copy_all, size: 14),
+                  label: const Text('Bearer', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: color,
+                    side: BorderSide(color: color),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildSelectedList(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.list_alt, color: Colors.blue.shade700, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            'Dữ liệu đã chọn ($selectedCount)',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Colors.blue.shade700),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        ...selectedItems.take(5).map((item) {
+          if (isBenh) {
+            final bn = item as BenhNhan;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(children: [
+                Icon(Icons.person, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${bn.hoTen}'
+                    '${bn.ngaySinh != null ? " · ${bn.ngaySinh}" : ""}'
+                    '${bn.soDienThoai != null ? " · ${bn.soDienThoai}" : ""}',
+                    style: const TextStyle(fontSize: 11),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ]),
+            );
+          } else {
+            final btn = item as BenhTruyenNhiem;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(children: [
+                Icon(Icons.coronavirus, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${btn.hoTen}'
+                    '${btn.ngaySinh != null ? " · ${btn.ngaySinh}" : ""}'
+                    '${btn.benhAnId != null ? " · BA: ${btn.benhAnId}" : ""}',
+                    style: const TextStyle(fontSize: 11),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ]),
+            );
+          }
+        }),
+        if (selectedItems.length > 5)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '... và ${selectedItems.length - 5} mục khác',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+            ),
+          ),
+      ]),
+    );
+  }
+
+  Widget _buildUsageGuide(BuildContext context) {
+    final endpoint = isBenh
+        ? '/api/benhNhan/thongtinbenhnhan'
+        : '/api/benhTruyenNhiem/thongtinbenhan';
+    
+    final curlExample = 'curl -X GET "https://benh-vien-api.onrender.com$endpoint?token=$dataToken" \\\n'
+        '  -H "Authorization: Bearer $jwtToken"';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.shade200),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.lightbulb_outline, color: Colors.green.shade700, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            'Cách sử dụng Data Token',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Colors.green.shade700),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        Text(
+          '1. Sử dụng JWT Token trong header "Authorization: Bearer <jwt>"',
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '2. Gửi Data Token qua query param "?token=<data_token>"',
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade800),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Ví dụ cURL:',
+          style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A2E),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: SelectableText(
+            curlExample,
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 9,
+              color: Color(0xFF00FF88),
+              height: 1.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(
+            child: SizedBox(
+              height: 32,
+              child: OutlinedButton.icon(
+                onPressed: () => _copy(context, curlExample, 'cURL command'),
+                icon: const Icon(Icons.copy, size: 12),
+                label: const Text('Copy cURL', style: TextStyle(fontSize: 11)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.green.shade700,
+                  side: BorderSide(color: Colors.green.shade400),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6)),
+                ),
+              ),
+            ),
+          ),
+        ]),
+      ]),
+    );
+  }
+}
+
+// ── Dialog hiển thị Token đơn giản (legacy - giữ lại cho tương thích) ───────
+
+class _TokenDialog extends StatelessWidget {
+  final String title;
+  final String? token;
+  
+  const _TokenDialog({
+    required this.title,
+    this.token,
+  });
+
+  void _copy(BuildContext context, String text, String label) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        const Icon(Icons.check_circle, color: Colors.white, size: 16),
         const SizedBox(width: 8),
         Text('Đã copy $label'),
       ]),
@@ -839,337 +1192,168 @@ class _PayloadDialogState extends State<_PayloadDialog>
 
   @override
   Widget build(BuildContext context) {
-    // Xây danh sách tabs động
-    final tabs = <Tab>[
-      const Tab(text: 'JSON Payload'),
-      if (widget.readableList != null) const Tab(text: 'Dễ đọc'),
-      if (widget.token != null) const Tab(text: 'JWT Token'),
-    ];
-    final views = <Widget>[
-      _jsonTab(),
-      if (widget.readableList != null) _readableTab(),
-      if (widget.token != null) _tokenTab(),
-    ];
+    if (token == null) {
+      return AlertDialog(
+        title: const Row(children: [
+          Icon(Icons.warning_amber, color: Colors.orange),
+          SizedBox(width: 8),
+          Text('Chưa có Token', style: TextStyle(fontSize: 16)),
+        ]),
+        content: const Text('Vui lòng lấy JWT Token trước khi xem.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
+      );
+    }
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        // ── Header ──────────────────────────────────────────────────────────
-        Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF1565C0),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(14), topRight: Radius.circular(14)),
-          ),
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 8, 0),
-              child: Row(children: [
-                const Icon(Icons.data_object, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(child: Text(widget.title,
-                    style: const TextStyle(color: Colors.white,
-                        fontWeight: FontWeight.bold, fontSize: 14))),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                  onPressed: () => Navigator.pop(context),
-                  padding: EdgeInsets.zero,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1565C0),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(14),
+                topRight: Radius.circular(14),
+              ),
+            ),
+            child: Row(children: [
+              const Icon(Icons.vpn_key, color: Colors.white, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
-              ]),
-            ),
-            TabBar(
-              controller: _tab,
-              indicatorColor: Colors.white,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white60,
-              tabs: tabs,
-            ),
-          ]),
-        ),
-
-        // ── Content ─────────────────────────────────────────────────────────
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.58,
-          child: TabBarView(controller: _tab, children: views),
-        ),
-      ]),
-    );
-  }
-
-  // ── Tab JSON Payload ────────────────────────────────────────────────────────
-  Widget _jsonTab() => Column(children: [
-    Container(
-      color: const Color(0xFFF5F7FF),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Row(children: [
-        Icon(Icons.code, size: 14, color: Colors.grey.shade600),
-        const SizedBox(width: 6),
-        Expanded(child: Text('${widget.jsonText.length} ký tự',
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600))),
-        TextButton.icon(
-          onPressed: () => _copy(widget.jsonText, 'JSON'),
-          icon: const Icon(Icons.copy, size: 14),
-          label: const Text('Copy JSON', style: TextStyle(fontSize: 12)),
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF1565C0),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            minimumSize: Size.zero,
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white70, size: 22),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+              ),
+            ]),
           ),
-        ),
-      ]),
-    ),
-    const Divider(height: 1),
-    Expanded(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
-        child: SelectableText(
-          widget.jsonText,
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 11.5,
-            color: Color(0xFF1A237E),
-            height: 1.5,
-          ),
-        ),
-      ),
-    ),
-  ]);
 
-  // ── Tab Dễ đọc — hiển thị id + tên ─────────────────────────────────────────
-  Widget _readableTab() {
-    final list = widget.readableList!;
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: list.length,
-      itemBuilder: (_, idx) {
-        final map = list[idx];
-        // Lọc các entry có giá trị
-        final entries = map.entries
-            .where((e) => e.value != null && e.value!.isNotEmpty)
-            .toList();
-        if (entries.isEmpty) return const SizedBox.shrink();
-
-        return Container(
-          margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.shade200),
-            boxShadow: [BoxShadow(
-                color: Colors.black.withAlpha(8), blurRadius: 4, offset: const Offset(0, 1))],
-          ),
-          child: Column(children: [
-            // Header với tên bệnh nhân
-            if (map['Họ tên'] != null)
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              // Token display
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1565C0).withAlpha(12),
-                  borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(10), topRight: Radius.circular(10)),
+                  color: const Color(0xFFF5F7FF),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF1565C0).withAlpha(50)),
                 ),
-                child: Row(children: [
-                  const Icon(Icons.person, size: 16, color: Color(0xFF1565C0)),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(map['Họ tên']!,
-                      style: const TextStyle(fontWeight: FontWeight.bold,
-                          fontSize: 13, color: Color(0xFF1565C0)))),
-                  // Copy tất cả
-                  GestureDetector(
-                    onTap: () {
-                      final buf = StringBuffer();
-                      for (final e in entries) {
-                        buf.writeln('${e.key}: ${e.value}');
-                      }
-                      _copy(buf.toString(), 'thông tin bệnh nhân');
-                    },
-                    child: Icon(Icons.copy_all, size: 16, color: Colors.grey.shade500),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    const Text(
+                      'JWT Token',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Color(0xFF1565C0),
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${token!.length} ký tự',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  SelectableText(
+                    token!,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      color: Color(0xFF1B5E20),
+                      height: 1.5,
+                    ),
                   ),
                 ]),
               ),
-            // Các field
-            ...entries.where((e) => e.key != 'Họ tên').map((e) => _readableRow(e.key, e.value!)),
-          ]),
-        );
-      },
-    );
-  }
 
-  Widget _readableRow(String label, String value) {
-    // Tô màu id phần đầu (trước " – ")
-    final hasId = value.contains(' – ');
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(
-          width: 110,
-          child: Text(label,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500)),
-        ),
-        Expanded(
-          child: hasId
-              ? RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: value.split(' – ').first,
-                        style: const TextStyle(
-                            fontFamily: 'monospace', fontSize: 12,
-                            color: Color(0xFF0D47A1), fontWeight: FontWeight.bold),
+              const SizedBox(height: 16),
+
+              // Copy buttons
+              Row(children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _copy(context, token!, 'Token'),
+                    icon: const Icon(Icons.copy, size: 18),
+                    label: const Text('Copy Token'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1565C0),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      TextSpan(
-                        text: ' – ${value.split(' – ').skip(1).join(' – ')}',
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF1B5E20)),
-                      ),
-                    ],
+                    ),
                   ),
-                )
-              : Text(value,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF1B5E20))),
-        ),
-      ]),
-    );
-  }
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _copy(context, 'Bearer $token', 'Bearer Token'),
+                    icon: const Icon(Icons.copy_all, size: 18),
+                    label: const Text('Copy Bearer'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF1565C0),
+                      side: const BorderSide(color: Color(0xFF1565C0)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ]),
 
-  // ── Tab JWT Token ───────────────────────────────────────────────────────────
-  Widget _tokenTab() {
-    final tok = widget.token ?? '';
-    // Tách header.payload.signature để hiển thị màu khác nhau
-    final parts = tok.split('.');
-    return Column(children: [
-      // Toolbar
-      Container(
-        color: const Color(0xFFF5F7FF),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Row(children: [
-          Icon(Icons.vpn_key, size: 14, color: Colors.grey.shade600),
-          const SizedBox(width: 6),
-          Expanded(child: Text(
-            'Bearer token (${tok.length} ký tự)',
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-          )),
-          TextButton.icon(
-            onPressed: () => _copy(tok, 'Token'),
-            icon: const Icon(Icons.copy, size: 14),
-            label: const Text('Copy Token', style: TextStyle(fontSize: 12)),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF1565C0),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-            ),
+              const SizedBox(height: 12),
+
+              // Info text
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Sử dụng token này trong header "Authorization: Bearer <token>" khi gọi API',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.blue.shade900,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
+            ]),
           ),
         ]),
       ),
-      const Divider(height: 1),
-      Expanded(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(12),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Token đầy đủ với mask/unmask
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  const Text('Bearer Token:', style: TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 12)),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => setState(() => _tokenVisible = !_tokenVisible),
-                    child: Icon(
-                      _tokenVisible ? Icons.visibility_off : Icons.visibility,
-                      size: 16, color: Colors.grey.shade600),
-                  ),
-                ]),
-                const SizedBox(height: 6),
-                SelectableText(
-                  _tokenVisible ? tok
-                      : tok.length > 20
-                          ? '${tok.substring(0, 10)}••••••••••${tok.substring(tok.length - 10)}'
-                          : '••••••••••',
-                  style: const TextStyle(
-                    fontFamily: 'monospace', fontSize: 11,
-                    color: Color(0xFF1B5E20),
-                  ),
-                ),
-              ]),
-            ),
-            const SizedBox(height: 12),
-
-            // Header + Payload decoded (JWT 3 phần)
-            if (parts.length == 3) ...[
-              _jwtSection('Header', parts[0], Colors.blue.shade700),
-              const SizedBox(height: 8),
-              _jwtSection('Payload', parts[1], Colors.green.shade700),
-              const SizedBox(height: 8),
-              _jwtSection('Signature', parts[2], Colors.orange.shade700,
-                  decode: false),
-            ],
-
-            // Copy với prefix Bearer
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _copy('Bearer $tok', 'Bearer Token'),
-                icon: const Icon(Icons.copy_all, size: 16),
-                label: const Text('Copy với prefix "Bearer "'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF1565C0),
-                  side: const BorderSide(color: Color(0xFF1565C0)),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            ),
-          ]),
-        ),
-      ),
-    ]);
-  }
-
-  Widget _jwtSection(String label, String base64Part, Color color,
-      {bool decode = true}) {
-    String decoded = base64Part;
-    if (decode) {
-      try {
-        // Base64url decode
-        String normalized = base64Part
-            .replaceAll('-', '+')
-            .replaceAll('_', '/');
-        final pad = normalized.length % 4;
-        if (pad != 0) normalized += '=' * (4 - pad);
-        final bytes = base64Decode(normalized);
-        final json = utf8.decode(bytes);
-        final map = jsonDecode(json) as Map;
-        decoded = const JsonEncoder.withIndent('  ').convert(map);
-      } catch (_) {
-        decoded = base64Part;
-      }
-    }
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: color.withAlpha(10),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withAlpha(60)),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label,
-            style: TextStyle(fontWeight: FontWeight.bold,
-                fontSize: 11, color: color)),
-        const SizedBox(height: 4),
-        SelectableText(decoded,
-            style: TextStyle(fontFamily: 'monospace',
-                fontSize: 10.5, color: color, height: 1.4)),
-      ]),
     );
   }
 }
