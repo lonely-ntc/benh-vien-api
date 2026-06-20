@@ -85,6 +85,8 @@ router.post('/byIds', async (req, res) => {
   try {
     const { benhNhanIds = [], benhTNIds = [] } = req.body;
     
+    console.log('📥 POST /byIds - Received benhNhanIds:', benhNhanIds);
+    
     if (!Array.isArray(benhNhanIds) || benhNhanIds.length === 0) {
       return res.status(400).json({ 
         success: false, 
@@ -100,10 +102,16 @@ router.post('/byIds', async (req, res) => {
     
     const benhNhanData = [];
     for (const chunk of benhNhanChunks) {
+      console.log('🔍 Querying benhNhan where benhNhanId in:', chunk);
       const snap = await db.collection('benhNhan')
         .where('benhNhanId', 'in', chunk)
         .get();
-      snap.docs.forEach(d => benhNhanData.push({ id: d.id, ...sanitize(d.data()) }));
+      console.log(`✅ Found ${snap.size} documents for chunk:`, chunk);
+      snap.docs.forEach(d => {
+        const data = d.data();
+        console.log('  - Doc:', d.id, 'benhNhanId:', data.benhNhanId);
+        benhNhanData.push({ id: d.id, ...sanitize(d.data()) });
+      });
     }
 
     // Lấy dữ liệu bệnh truyền nhiễm theo field benhAnId nếu có
@@ -121,6 +129,8 @@ router.post('/byIds', async (req, res) => {
         snap.docs.forEach(d => benhTNData.push({ id: d.id, ...sanitize(d.data()) }));
       }
     }
+
+    console.log(`📊 Result: Found ${benhNhanData.length} bệnh nhân, ${benhTNData.length} bệnh TN`);
 
     // Tạo token và lưu mã nghiệp vụ (benhNhanId, benhAnId)
     const token = tokenStore.create({
@@ -146,6 +156,7 @@ router.post('/byIds', async (req, res) => {
       expiresIn: '24 giờ',
     });
   } catch (e) {
+    console.error('❌ Error in /byIds:', e);
     res.status(500).json({ success: false, message: e.message });
   }
 });

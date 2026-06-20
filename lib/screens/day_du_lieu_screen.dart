@@ -8,7 +8,9 @@ import '../services/firestore_service.dart';
 import '../services/benh_truyen_nhiem_service.dart';
 import '../services/api_push_service.dart';
 
-const String _apiBaseUrl = 'https://benh-vien-api.onrender.com';
+const String _apiBaseUrl = 'http://10.0.2.2:3000'; // Android emulator
+// const String _apiBaseUrl = 'http://localhost:3000'; // iOS simulator
+// const String _apiBaseUrl = 'https://benh-vien-api.onrender.com'; // Production
 
 class DayDuLieuScreen extends StatefulWidget {
   const DayDuLieuScreen({super.key});
