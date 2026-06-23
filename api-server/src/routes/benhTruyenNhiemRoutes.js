@@ -83,11 +83,19 @@ router.get('/', async (req, res) => {
  *   benhNhanIds: ['BN0001','BN0002',...] (optional),
  *   benhTNIds: ['BA0001','BA0002',...] (required - mã bệnh án)
  * }
- * Tạo token dựa trên mã benhAnId
+ * 
+ * Tạo Data Token chứa toàn bộ dữ liệu bệnh truyền nhiễm đã mã hóa
+ * Token này sẽ được giải mã bằng JWT Secret khi lấy dữ liệu
  */
 router.post('/byIds', async (req, res) => {
   try {
     const { benhNhanIds = [], benhTNIds = [] } = req.body;
+    
+    console.log('📥 POST /byIds - Creating data token for:', {
+      benhNhanIds: benhNhanIds.length,
+      benhTNIds: benhTNIds.length,
+      user: req.user.username,
+    });
     
     if (!Array.isArray(benhTNIds) || benhTNIds.length === 0) {
       return res.status(400).json({ 
@@ -96,7 +104,7 @@ router.post('/byIds', async (req, res) => {
       });
     }
 
-    // Lấy dữ liệu bệnh truyền nhiễm theo field benhAnId
+    // ═══ Lấy dữ liệu bệnh truyền nhiễm từ Firestore ═══
     const benhTNChunks = [];
     for (let i = 0; i < benhTNIds.length; i += 10) {
       benhTNChunks.push(benhTNIds.slice(i, i + 10));
@@ -104,13 +112,19 @@ router.post('/byIds', async (req, res) => {
     
     const benhTNData = [];
     for (const chunk of benhTNChunks) {
+      console.log('🔍 Querying benhTruyenNhiem where benhAnId in:', chunk);
       const snap = await db.collection('benhTruyenNhiem')
         .where('benhAnId', 'in', chunk)
         .get();
-      snap.docs.forEach(d => benhTNData.push({ id: d.id, ...sanitize(d.data()) }));
+      console.log(`✅ Found ${snap.size} documents`);
+      snap.docs.forEach(d => {
+        const data = d.data();
+        // Format data theo chuẩn API
+        benhTNData.push(formatBenhTNToAPI(data));
+      });
     }
 
-    // Lấy dữ liệu bệnh nhân theo field benhNhanId nếu có
+    // ═══ Lấy dữ liệu bệnh nhân nếu có ═══
     let benhNhanData = [];
     if (benhNhanIds.length > 0) {
       const benhNhanChunks = [];
@@ -122,23 +136,32 @@ router.post('/byIds', async (req, res) => {
         const snap = await db.collection('benhNhan')
           .where('benhNhanId', 'in', chunk)
           .get();
-        snap.docs.forEach(d => benhNhanData.push({ id: d.id, ...sanitize(d.data()) }));
+        snap.docs.forEach(d => {
+          const data = d.data();
+          benhNhanData.push(formatBenhNhanToAPI(data));
+        });
       }
     }
 
-    // Tạo token và lưu mã nghiệp vụ
+    console.log(`📊 Data retrieved: ${benhNhanData.length} bệnh nhân, ${benhTNData.length} bệnh TN`);
+
+    // ═══ Tạo Data Token chứa toàn bộ dữ liệu đã được mã hóa ═══
     const token = tokenStore.create({
-      benhNhanIds,
-      benhTNIds,
-      timestamp: new Date().toISOString(),
-      totalBenhNhan: benhNhanData.length,
-      totalBenhTN: benhTNData.length,
+      type: 'data_token',
+      benhNhan: benhNhanData,
+      benhTruyenNhiem: benhTNData,
+      metadata: {
+        requestedBenhNhanIds: benhNhanIds,
+        requestedBenhTNIds: benhTNIds,
+        createdBy: req.user.username,
+        timestamp: new Date().toISOString(),
+      }
     });
 
     res.json({ 
       success: true, 
       token,
-      message: 'Token đã được tạo. Sử dụng GET /api/benhTruyenNhiem/thongtinbenhan?token=xxx để lấy dữ liệu.',
+      message: 'Data token đã tạo. Sử dụng GET /api/benhTruyenNhiem/thongtinbenhan?token=xxx với JWT token trong header để lấy dữ liệu.',
       summary: {
         benhNhanCount: benhNhanData.length,
         benhTNCount: benhTNData.length,
@@ -148,8 +171,10 @@ router.post('/byIds', async (req, res) => {
         notFoundBenhTN: benhTNIds.length - benhTNData.length,
       },
       expiresIn: '24 giờ',
+      note: 'Data token được mã hóa bằng JWT Secret. Cần JWT token để giải mã.',
     });
   } catch (e) {
+    console.error('❌ Error in /byIds:', e);
     res.status(500).json({ success: false, message: e.message });
   }
 });
@@ -185,12 +210,18 @@ router.get('/:id', async (req, res) => {
 
 /**
  * GET /api/benhTruyenNhiem/thongtinbenhan
- * Query: token=xxx (data token từ POST /byIds)
- * Lấy thông tin bệnh truyền nhiễm đã chọn theo data token
- * Format: Chuẩn API với ID cho danh mục, text cho thông tin cá nhân
+ * Query: token=xxx (encrypted data token)
+ * Header: Authorization: Bearer <JWT_TOKEN> (để xác thực và giải mã)
+ * 
+ * Lấy dữ liệu bệnh truyền nhiễm đã được mã hóa trong Data Token
+ * JWT Token được dùng để:
+ * 1. Xác thực người dùng
+ * 2. Giải mã Data Token (vì Data Token được mã hóa bằng JWT Secret)
  */
 router.get('/thongtinbenhan', async (req, res) => {
-  console.log('📥 GET /thongtinbenhan - Query:', req.query);
+  console.log('📥 GET /thongtinbenhan');
+  console.log('   Query token:', req.query.token?.substring(0, 20) + '...');
+  console.log('   User:', req.user.username);
   
   try {
     const dataToken = req.query.token;
@@ -199,82 +230,55 @@ router.get('/thongtinbenhan', async (req, res) => {
       console.log('❌ Missing token parameter');
       return res.status(400).json({ 
         success: false, 
-        message: 'Cần truyền token trong query parameter (?token=xxx)' 
+        message: 'Cần truyền data token trong query parameter (?token=xxx)' 
       });
     }
     
+    // Giải mã Data Token (sử dụng JWT Secret)
     const tokenData = tokenStore.get(dataToken);
-    console.log('🔍 Token data:', tokenData ? 'Found' : 'Not found');
+    console.log('🔍 Token data:', tokenData ? 'Decoded successfully' : 'Failed to decode');
     
     if (!tokenData) {
       return res.status(404).json({ 
         success: false, 
-        message: 'Token không tồn tại hoặc đã hết hạn.' 
+        message: 'Data token không hợp lệ, đã hết hạn, hoặc không thể giải mã. Vui lòng tạo token mới.' 
       });
     }
 
-    const { benhNhanIds = [], benhTNIds = [] } = tokenData;
-    console.log(`📊 Fetching: ${benhNhanIds.length} benhNhanIds, ${benhTNIds.length} benhTNIds`);
-
-    // Lấy dữ liệu bệnh nhân theo field benhNhanId (nếu có)
-    const benhNhanData = [];
-    if (benhNhanIds.length > 0) {
-      const chunks = [];
-      for (let i = 0; i < benhNhanIds.length; i += 10) {
-        chunks.push(benhNhanIds.slice(i, i + 10));
-      }
-      
-      for (const chunk of chunks) {
-        const snap = await db.collection('benhNhan')
-          .where('benhNhanId', 'in', chunk)
-          .get();
-        snap.docs.forEach(d => {
-          const data = d.data();
-          benhNhanData.push(formatBenhNhanToAPI(data));
-        });
-      }
+    // Kiểm tra token type
+    if (tokenData.type !== 'data_token') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Token không đúng định dạng.' 
+      });
     }
 
-    // Lấy dữ liệu bệnh truyền nhiễm theo field benhAnId
-    const benhTNData = [];
-    if (benhTNIds.length > 0) {
-      const chunks = [];
-      for (let i = 0; i < benhTNIds.length; i += 10) {
-        chunks.push(benhTNIds.slice(i, i + 10));
-      }
-      
-      for (const chunk of chunks) {
-        const snap = await db.collection('benhTruyenNhiem')
-          .where('benhAnId', 'in', chunk)
-          .get();
-        snap.docs.forEach(d => {
-          const data = d.data();
-          benhTNData.push(formatBenhTNToAPI(data));
-        });
-      }
-    }
-
-    console.log(`✅ Returning: ${benhNhanData.length} BN, ${benhTNData.length} BTN`);
+    const { benhNhan = [], benhTruyenNhiem = [], metadata = {} } = tokenData;
     
+    console.log(`✅ Returning encrypted data: ${benhNhan.length} BN, ${benhTruyenNhiem.length} BTN`);
+    console.log(`   Created by: ${metadata.createdBy}, at: ${metadata.timestamp}`);
+
     res.json({ 
       success: true,
-      token: dataToken,
-      timestamp: tokenData.timestamp,
+      message: 'Dữ liệu đã được giải mã thành công',
       data: {
-        benhNhan: benhNhanData,
-        benhTruyenNhiem: benhTNData,
+        benhNhan,
+        benhTruyenNhiem,
+      },
+      metadata: {
+        createdBy: metadata.createdBy,
+        createdAt: metadata.timestamp,
+        requestedBenhNhanIds: metadata.requestedBenhNhanIds,
+        requestedBenhTNIds: metadata.requestedBenhTNIds,
       },
       summary: {
-        benhNhanCount: benhNhanData.length,
-        benhTNCount: benhTNData.length,
-        total: benhNhanData.length + benhTNData.length,
-        requestedBenhNhan: benhNhanIds.length,
-        requestedBenhTN: benhTNIds.length,
-        notFoundBenhNhan: benhNhanIds.length - benhNhanData.length,
-        notFoundBenhTN: benhTNIds.length - benhTNData.length,
+        benhNhanCount: benhNhan.length,
+        benhTNCount: benhTruyenNhiem.length,
+        total: benhNhan.length + benhTruyenNhiem.length,
       }
     });
   } catch (e) {
+    console.error('❌ Error in /thongtinbenhan:', e);
     res.status(500).json({ success: false, message: e.message });
   }
 });
