@@ -59,14 +59,13 @@ router.get('/', async (req, res) => {
     }
 
     const snap = await q.get();
-    // Chỉ trả về id
-    const data = snap.docs.map(d => d.id);
+    const data = snap.docs.map(d => ({ id: d.id, ...sanitize(d.data()) }));
 
     res.json({
       success: true,
       total: data.length,
       pageSize,
-      nextStartAfter: data.length === pageSize ? data[data.length - 1] : null,
+      nextStartAfter: data.length === pageSize ? data[data.length - 1].id : null,
       data,
     });
   } catch (e) {

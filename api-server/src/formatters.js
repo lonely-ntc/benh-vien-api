@@ -93,14 +93,14 @@ export function formatBenhNhanToAPI(data) {
 /**
  * Format dữ liệu bệnh truyền nhiễm từ Firestore sang chuẩn API
  * - Thông tin cá nhân: text
- * - Danh mục: chỉ trả về id
+ * - Danh mục: chỉ trả về id (không có suffix Id trong tên field nếu là field id duy nhất)
  */
 export function formatBenhTNToAPI(data) {
-  // Helper: lấy id, trả về "" nếu null
+  // Helper: lấy id, trả về "" nếu null hoặc trả về null nếu thích hợp
   const getId = (obj) => {
-    if (obj === null || obj === undefined) return "";
+    if (obj === null || obj === undefined) return null;
     if (typeof obj === 'string' || typeof obj === 'number') return obj.toString();
-    return obj?.id?.toString() || "";
+    return obj?.id?.toString() || null;
   };
   
   return {
@@ -110,16 +110,16 @@ export function formatBenhTNToAPI(data) {
     HoTen: data.hoTen || "",
     NgaySinh: data.ngaySinh || "",
     
-    GioiTinhId: getId(data.gioiTinh),
+    GioiTinh: getId(data.gioiTinh),
     DanTocId: getId(data.danTocId),
     
     MaDinhDanhCaNhan: data.maDinhDanhCaNhan || "",
     TenNguoiBaoHo: data.tenNguoiBaoHo || "",
     SDT: data.sdt || "",
     
-    CoThaiId: getId(data.coThai),
+    CoThai: getId(data.coThai),
     TuanThai: data.tuanThai || null,
-    NgheNghiepId: getId(data.ngheNghiep),
+    NgheNghiep: getId(data.ngheNghiep),
     
     DiaChiNoiLamViec_Hoc: data.diaChiNoiLamViec || "",
     NoiLamViec_Hoc: data.noiLamViec || "",
@@ -139,11 +139,11 @@ export function formatBenhTNToAPI(data) {
     KhuPhoAp: data.khuPhoAp || "",
     SoHSBA: data.soHSBA || "",
     
-    CoSoDieuTriId: getId(data.coSoDieuTri),
+    CoSoDieuTri: getId(data.coSoDieuTri),
     CityId_CSDT: getId(data.cityIdCSDT),
     
-    ChanDoanBenhId: getId(data.chanDoanBenh),
-    PhanDoBenhId: getId(data.phanDoBenh),
+    ChanDoanBenh: getId(data.chanDoanBenh),
+    PhanDoBenh: getId(data.phanDoBenh),
     
     ThongTinDieuTri: data.thongTinDieuTri || "",
     ChanDoanBienChung: data.chanDoanBienChung || "",
@@ -155,17 +155,17 @@ export function formatBenhTNToAPI(data) {
     NgayNhapVien: data.ngayNhapVien || "",
     NgayXV_TV_CV: data.ngayXVTVCV || null,
     
-    PhanLoaiChanDoanId: getId(data.phanLoaiChanDoan),
+    PhanLoaiChanDoan: getId(data.phanLoaiChanDoan),
     LayMauXN: data.layMauXN || "",
-    LoaiBenhPhamId: getId(data.loaiBenhPham),
+    LoaiBenhPham: getId(data.loaiBenhPham),
     
     DonViThucHienXN: data.donViThucHienXN || "",
     NgayLayMau: data.ngayLayMau || "",
     
-    LoaiXNId: getId(data.loaiXN),
-    KetQuaXNId: getId(data.ketQuaXN),
-    TinhTrangTiemId: getId(data.tinhTrangTiem),
-    HinhThucDieuTriId: getId(data.hinhThucDieuTri),
+    LoaiXN: getId(data.loaiXN),
+    KetQuaXN: getId(data.ketQuaXN),
+    TinhTrangTiem: getId(data.tinhTrangTiem),
+    HinhThucDieuTri: getId(data.hinhThucDieuTri),
     
     ChanDoanChinh: data.chanDoanChinh || null,
     SoMuiTiemUong: data.soMuiTiemUong || "",
@@ -173,7 +173,7 @@ export function formatBenhTNToAPI(data) {
     NguoiDieuTraDichTe: data.nguoiDieuTraDichTe || "",
     SDTNguoiDieuTraDTe: data.sdtNguoiDieuTraDTe || "",
     
-    DonViDieuTraId: getId(data.donViDieuTra),
+    DonViDieuTra: getId(data.donViDieuTra),
     
     EmailDonViDieuTra: data.emailDonViDieuTra || "",
     NgayBaoCao: data.ngayBaoCao || "",
