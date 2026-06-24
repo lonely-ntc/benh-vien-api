@@ -22,5 +22,101 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // DANH MỤC (Category Collections)
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Các collection danh mục - cho phép đọc cho tất cả, ghi chỉ cho admin
+    match /gioiTinh/{docId} {
+      allow read: if true;
+      allow write: if true; // Tạm thời cho phép ghi để seed data
+    }
+
+    match /coKhong/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /tinhTrangTiemChung/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /danToc/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /ngheNghiep/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /dieuTri/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /hinhThucDieuTri/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /phanLoaiChanDoan/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /loaiBenhPham/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /loaiXetNghiem/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /ketQuaXetNghiem/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /chanDoanBenh/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /phanDoBenh/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /tinh/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /benhNen/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /coSoBaoCao/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /coSoDieuTri/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /donViDieuTra/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
   }
 }
+

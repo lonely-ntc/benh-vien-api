@@ -63,13 +63,14 @@ router.get('/', async (req, res) => {
     }
 
     const snap = await q.get();
-    const data = snap.docs.map(d => ({ id: d.id, ...sanitize(d.data()) }));
+    // Format dữ liệu để chỉ trả về ID của các trường CategoryItem
+    const data = snap.docs.map(d => formatBenhTNToAPI(d.data()));
 
     res.json({
       success: true,
       total: data.length,
       pageSize,
-      nextStartAfter: data.length === pageSize ? data[data.length - 1].id : null,
+      nextStartAfter: data.length === pageSize ? snap.docs[snap.docs.length - 1].id : null,
       data,
     });
   } catch (e) {
@@ -186,23 +187,9 @@ router.post('/byIds', async (req, res) => {
 router.get('/tatca', async (req, res) => {
   try {
     const snap = await db.collection('benhTruyenNhiem').orderBy('ngayTao', 'desc').get();
-    const data = snap.docs.map(d => ({ id: d.id, ...sanitize(d.data()) }));
+    // Format dữ liệu để chỉ trả về ID của các trường CategoryItem
+    const data = snap.docs.map(d => formatBenhTNToAPI(d.data()));
     res.json({ success: true, total: data.length, data });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
-});
-
-/**
- * GET /api/benhTruyenNhiem/:id
- */
-router.get('/:id', async (req, res) => {
-  try {
-    const doc = await db.collection('benhTruyenNhiem').doc(req.params.id).get();
-    if (!doc.exists) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy bệnh án.' });
-    }
-    res.json({ success: true, data: { id: doc.id, ...sanitize(doc.data()) } });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
@@ -211,60 +198,49 @@ router.get('/:id', async (req, res) => {
 /**
  * GET /api/benhTruyenNhiem/thongtinbenhan
  * Query: token=xxx (encrypted data token)
- * Header: Authorization: Bearer <JWT_TOKEN> (để xác thực và giải mã)
- * 
- * Lấy dữ liệu bệnh truyền nhiễm đã được mã hóa trong Data Token
- * JWT Token được dùng để:
- * 1. Xác thực người dùng
- * 2. Giải mã Data Token (vì Data Token được mã hóa bằng JWT Secret)
+ * Header: Authorization: Bearer <JWT_TOKEN>
+ *
+ * ⚠️ PHẢI đặt TRƯỚC GET /:id để Express không nhầm thongtinbenhan là :id
  */
 router.get('/thongtinbenhan', async (req, res) => {
   console.log('📥 GET /thongtinbenhan');
   console.log('   Query token:', req.query.token?.substring(0, 20) + '...');
   console.log('   User:', req.user.username);
-  
+
   try {
     const dataToken = req.query.token;
-    
+
     if (!dataToken) {
       console.log('❌ Missing token parameter');
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Cần truyền data token trong query parameter (?token=xxx)' 
-      });
-    }
-    
-    // Giải mã Data Token (sử dụng JWT Secret)
-    const tokenData = tokenStore.get(dataToken);
-    console.log('🔍 Token data:', tokenData ? 'Decoded successfully' : 'Failed to decode');
-    
-    if (!tokenData) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Data token không hợp lệ, đã hết hạn, hoặc không thể giải mã. Vui lòng tạo token mới.' 
+      return res.status(400).json({
+        success: false,
+        message: 'Cần truyền data token trong query parameter (?token=xxx)',
       });
     }
 
-    // Kiểm tra token type
-    if (tokenData.type !== 'data_token') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Token không đúng định dạng.' 
+    const tokenData = tokenStore.get(dataToken);
+    console.log('🔍 Token data:', tokenData ? 'Decoded successfully' : 'Failed to decode');
+
+    if (!tokenData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Data token không hợp lệ, đã hết hạn, hoặc không thể giải mã. Vui lòng tạo token mới.',
       });
+    }
+
+    if (tokenData.type !== 'data_token') {
+      return res.status(400).json({ success: false, message: 'Token không đúng định dạng.' });
     }
 
     const { benhNhan = [], benhTruyenNhiem = [], metadata = {} } = tokenData;
-    
-    console.log(`✅ Returning encrypted data: ${benhNhan.length} BN, ${benhTruyenNhiem.length} BTN`);
+
+    console.log(`✅ Returning data: ${benhNhan.length} BN, ${benhTruyenNhiem.length} BTN`);
     console.log(`   Created by: ${metadata.createdBy}, at: ${metadata.timestamp}`);
 
-    res.json({ 
+    res.json({
       success: true,
       message: 'Dữ liệu đã được giải mã thành công',
-      data: {
-        benhNhan,
-        benhTruyenNhiem,
-      },
+      data: { benhNhan, benhTruyenNhiem },
       metadata: {
         createdBy: metadata.createdBy,
         createdAt: metadata.timestamp,
@@ -275,10 +251,28 @@ router.get('/thongtinbenhan', async (req, res) => {
         benhNhanCount: benhNhan.length,
         benhTNCount: benhTruyenNhiem.length,
         total: benhNhan.length + benhTruyenNhiem.length,
-      }
+      },
     });
   } catch (e) {
     console.error('❌ Error in /thongtinbenhan:', e);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+/**
+ * GET /api/benhTruyenNhiem/:id
+ * ⚠️ Phải đặt SAU tất cả route cụ thể
+ */
+router.get('/:id', async (req, res) => {
+  try {
+    const doc = await db.collection('benhTruyenNhiem').doc(req.params.id).get();
+    if (!doc.exists) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy bệnh án.' });
+    }
+    // Format dữ liệu để chỉ trả về ID của các trường CategoryItem
+    const data = formatBenhTNToAPI(doc.data());
+    res.json({ success: true, data });
+  } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
 });
