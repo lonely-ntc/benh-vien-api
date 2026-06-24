@@ -54,11 +54,11 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
     _ngheNghiep         = bn.ngheNghiep;
     _nhomMau            = bn.nhomMau;
     _tinh               = bn.tinhItem;
-    _benhNen            = bn.benhNenItem;
-    _benhTruyenNhiem    = bn.benhTruyenNhiemItem;
+    _benhNen            = bn.benhNenKemTheoItem;          // Fix: dùng benhNenKemTheoItem
+    _benhTruyenNhiem    = bn.chanDoanBenhItem;            // Fix: dùng chanDoanBenhItem
     _tinhTrangTiemChung = bn.tinhTrangTiemChungItem;
-    _coKhong            = bn.coKhongItem;
-    _dieuTri            = bn.dieuTriItem;
+    _coKhong            = bn.coThaiItem;                  // Fix: dùng coThaiItem
+    _dieuTri            = bn.thongTinDieuTriItem;         // Fix: dùng thongTinDieuTriItem
     _hinhThucDieuTri    = bn.hinhThucDieuTriItem;
     _chanDoanBenh       = bn.chanDoanBenhItem;
     _phanLoaiChanDoan   = bn.phanLoaiChanDoanItem;
@@ -131,14 +131,14 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
         soDienThoai: _soDienThoaiCtrl.text.isNotEmpty ? _soDienThoaiCtrl.text : null,
         cccd: _cccdCtrl.text.isNotEmpty ? _cccdCtrl.text : null,
         baoHiemYTe: _baoHiemYTeCtrl.text.isNotEmpty ? _baoHiemYTeCtrl.text : null,
-        diaChi: _diaChiCtrl.text.isNotEmpty ? _diaChiCtrl.text : null,
+        noiOHienNay: _diaChiCtrl.text.isNotEmpty ? _diaChiCtrl.text : null,  // Fix: dùng noiOHienNay
         tinhItem: _tinh,
         nhomMau: _nhomMau,
-        benhNenItem: _benhNen,
-        benhTruyenNhiemItem: _benhTruyenNhiem,
+        benhNenKemTheoItem: _benhNen,                     // Fix: dùng benhNenKemTheoItem
+        // _benhTruyenNhiem đã map vào chanDoanBenhItem ở trên
         tinhTrangTiemChungItem: _tinhTrangTiemChung,
-        coKhongItem: _coKhong,
-        dieuTriItem: _dieuTri,
+        coThaiItem: _coKhong,                             // Fix: dùng coThaiItem
+        thongTinDieuTriItem: _dieuTri,                    // Fix: dùng thongTinDieuTriItem
         hinhThucDieuTriItem: _hinhThucDieuTri,
         chanDoanBenhItem: _chanDoanBenh,
         phanLoaiChanDoanItem: _phanLoaiChanDoan,
