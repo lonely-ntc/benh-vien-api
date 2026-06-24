@@ -47,8 +47,7 @@ class _ThemBTNScreenState extends State<ThemBTNScreen> {
   final _phanDoBenhTextCtrl   = TextEditingController();
 
   // ── Dropdown values ─────────────────────────────────────────────────────
-  CategoryItem? _gioiTinh, _danToc;
-  String? _ngheNghiep;
+  CategoryItem? _gioiTinh, _danToc, _ngheNghiep;
   CategoryItem? _coThai;
   CategoryItem? _cityIdHoc, _cityId, _cityIdCSDT;
   String? _wardIdHoc, _wardId;
@@ -113,7 +112,7 @@ class _ThemBTNScreenState extends State<ThemBTNScreen> {
         sdt: _sdtCtrl.text.trim().isNotEmpty ? _sdtCtrl.text.trim() : null,
         coThaiItem: _coThai,
         tuanThai: int.tryParse(_tuanThaiCtrl.text.trim()),
-        ngheNghiep: _ngheNghiep,
+        ngheNghiepItem: _ngheNghiep,
         noiLamViecHoc: _noiLamViecCtrl.text.trim().isNotEmpty ? _noiLamViecCtrl.text.trim() : null,
         diaChinoiLamViecHoc: _diaChiLamViecCtrl.text.trim().isNotEmpty ? _diaChiLamViecCtrl.text.trim() : null,
         cityIdHocItem: _cityIdHoc,
@@ -233,7 +232,7 @@ class _ThemBTNScreenState extends State<ThemBTNScreen> {
               _tf(_sdtCtrl, '8. Số điện thoại (10 số)', Icons.phone_outlined, type: TextInputType.phone),
               _dd('9. Có thai', Icons.pregnant_woman_outlined, _coThai, CategoryOptions.coKhong, (v) => setState(() => _coThai = v)),
               _tf(_tuanThaiCtrl, '10. Tuần thai', Icons.access_time_outlined, type: TextInputType.number),
-              _ddStr('11. Nghề nghiệp', Icons.work_outline, _ngheNghiep, CategoryOptions.ngheNghiep, (v) => setState(() => _ngheNghiep = v)),
+              _dd('11. Nghề nghiệp', Icons.work_outline, _ngheNghiep, CategoryOptions.ngheNghiep, (v) => setState(() => _ngheNghiep = v)),
               _tf(_noiLamViecCtrl, '12. Nơi làm việc/học tập', Icons.business_outlined),
               _tf(_diaChiLamViecCtrl, '13. Địa chỉ nơi làm/học', Icons.location_on_outlined),
               _dd('14. Tỉnh nơi làm/học', Icons.map_outlined, _cityIdHoc, CategoryOptions.tinh, (v) => setState(() => _cityIdHoc = v)),
@@ -378,22 +377,6 @@ class _ThemBTNScreenState extends State<ThemBTNScreen> {
         items: items
             .map((e) => DropdownMenuItem(value: e, child: Text(e.name, overflow: TextOverflow.ellipsis)))
             .toList(),
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  /// Dropdown dùng String thuần (nghề nghiệp, nhóm máu…)
-  Widget _ddStr(String label, IconData icon, String? value,
-      List<String> items, void Function(String?) onChanged) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        initialValue: value,
-        decoration: _dec(label, icon),
-        isExpanded: true,
-        hint: Text('Chọn...', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
-        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
         onChanged: onChanged,
       ),
     );

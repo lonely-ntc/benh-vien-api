@@ -18,7 +18,7 @@ class BenhNhan {
   final String? soDienThoai;            // 8. SĐT
   final CategoryItem? coThaiItem;       // 9. Có thai
   final int? tuanThai;                  // 10. Tuần thai
-  final String? ngheNghiep;             // 11. Nghề nghiệp
+  final CategoryItem? ngheNghiepItem;   // 11. Nghề nghiệp
   final String? noiLamViecHoc;          // 12. Nơi làm/học
   final String? diaChiNoiLamViecHoc;    // 13. Địa chỉ làm/học
   final CategoryItem? cityIdHocItem;    // 14. Tỉnh làm/học
@@ -94,7 +94,7 @@ class BenhNhan {
     this.soDienThoai,
     this.coThaiItem,
     this.tuanThai,
-    this.ngheNghiep,
+    this.ngheNghiepItem,
     this.noiLamViecHoc,
     this.diaChiNoiLamViecHoc,
     this.cityIdHocItem,
@@ -149,6 +149,7 @@ class BenhNhan {
   // ── Getters tiện ích (tương thích ngược) ─────────────────────────────
   String? get gioiTinh           => gioiTinhItem?.name;
   String? get danToc             => danTocItem?.name;
+  String? get ngheNghiep         => ngheNghiepItem?.name;
   String? get tinh               => tinhItem?.name;
   String? get coThai             => coThaiItem?.name;
   String? get cityIdHoc          => cityIdHocItem?.name;
@@ -194,7 +195,7 @@ class BenhNhan {
       soDienThoai: data['soDienThoai'],
       coThaiItem:             cat(data['coThai'],             CategoryOptions.coKhong),
       tuanThai: toInt(data['tuanThai']),
-      ngheNghiep: data['ngheNghiep'],
+      ngheNghiepItem:         cat(data['ngheNghiep'],         CategoryOptions.ngheNghiep),
       noiLamViecHoc: data['noiLamViecHoc'],
       diaChiNoiLamViecHoc: data['diaChiNoiLamViecHoc'],
       cityIdHocItem:          cat(data['cityIdHoc'],          CategoryOptions.tinh),
@@ -260,7 +261,7 @@ class BenhNhan {
       if (soDienThoai != null)            'soDienThoai':        soDienThoai,
       if (coThaiItem != null)             'coThai':             coThaiItem!.toMap(),
       if (tuanThai != null)               'tuanThai':           tuanThai,
-      if (ngheNghiep != null)             'ngheNghiep':         ngheNghiep,
+      if (ngheNghiepItem != null)         'ngheNghiep':         ngheNghiepItem!.toMap(),
       if (noiLamViecHoc != null)          'noiLamViecHoc':      noiLamViecHoc,
       if (diaChiNoiLamViecHoc != null)    'diaChiNoiLamViecHoc': diaChiNoiLamViecHoc,
       if (cityIdHocItem != null)          'cityIdHoc':          cityIdHocItem!.toMap(),
@@ -328,7 +329,7 @@ class BenhNhan {
     'SDT':                  soDienThoai,
     'CoThai':               coThaiItem?.id.toString(),
     'TuanThai':             tuanThai,
-    'NgheNghiep':           ngheNghiep,
+    'NgheNghiep':           ngheNghiepItem?.id.toString(),
     'DiaChiNoiLamViec_Hoc': diaChiNoiLamViecHoc ?? '',
     'NoiLamViec_Hoc':       noiLamViecHoc ?? '',
     'CityId_Hoc':           cityIdHocItem?.id.toString(),

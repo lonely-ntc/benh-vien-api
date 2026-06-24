@@ -33,9 +33,8 @@ class CategoryOptions {
 
   // ── CoKhong ──────────────────────────────────────────────────────────────
   static const List<CategoryItem> coKhong = [
-    CategoryItem(11134, 'Có'),
-    CategoryItem(11135, 'Không'),
-    CategoryItem(11137, 'Không rõ'),
+    CategoryItem(264, 'Có'),
+    CategoryItem(265, 'Không'),
   ];
 
   // ── TinhTrangTiemChung ────────────────────────────────────────────────────
@@ -53,10 +52,52 @@ class CategoryOptions {
     'A', 'B', 'AB', 'O', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-',
   ];
 
-  // ── NgheNghiep (không có API ID) ─────────────────────────────────────────
-  static const List<String> ngheNghiep = [
-    'Học sinh / Sinh viên', 'Công nhân', 'Nông dân', 'Cán bộ / Viên chức',
-    'Kinh doanh / Buôn bán', 'Nội trợ', 'Hưu trí', 'Thất nghiệp', 'Khác',
+  // ── NgheNghiep ───────────────────────────────────────────────────────────
+  static const List<CategoryItem> ngheNghiep = [
+    CategoryItem(11204, 'Trẻ < 6 tuổi đi học, <15 tuổi không đi học'),
+    CategoryItem(11205, 'Sinh viên, học sinh'),
+    CategoryItem(11206, 'Hưu và > 60 tuổi'),
+    CategoryItem(11207, 'Lực lượng vũ trang'),
+    CategoryItem(11208, 'Tri thức'),
+    CategoryItem(11209, 'Hành chính, sự nghiệp'),
+    CategoryItem(11210, 'Công nhân'),
+    CategoryItem(11211, 'Y tế'),
+    CategoryItem(11212, 'Dịch vụ'),
+    CategoryItem(11213, 'Nông dân'),
+    CategoryItem(11214, 'Ngoại kiều'),
+    CategoryItem(11215, 'Việt kiều'),
+    CategoryItem(11216, 'Hưu trí'),
+    CategoryItem(11562, 'Trẻ 15 tuổi không đi học'),
+    CategoryItem(11563, 'Trí thức'),
+    CategoryItem(11565, 'Bác sĩ'),
+    CategoryItem(11566, 'Còn nhỏ'),
+    CategoryItem(11567, 'Các tổ chức xã hội Đảng, đoàn thể'),
+    CategoryItem(11568, 'Thất nghiệp'),
+    CategoryItem(11569, 'Nhân dân'),
+    CategoryItem(11570, 'Công nhân quốc phòng'),
+    CategoryItem(11571, 'Thân nhân sĩ quan'),
+    CategoryItem(11572, 'Hộ nghèo'),
+    CategoryItem(11573, 'Nội trợ'),
+    CategoryItem(11574, 'Nhân viên văn phòng'),
+    CategoryItem(11575, 'Bưu điện'),
+    CategoryItem(11576, 'Giáo dục đào tạo'),
+    CategoryItem(11577, 'Quản lý nhà nước'),
+    CategoryItem(11578, 'An ninh quốc phòng'),
+    CategoryItem(11579, 'Dịch vụ công cộng'),
+    CategoryItem(11580, 'Dịch vụ gia đình'),
+    CategoryItem(11581, 'Dịch vụ (trừ dịch vụ gia đình và dịch vụ công cộng)'),
+    CategoryItem(11582, 'Thương mại'),
+    CategoryItem(11583, 'Giao thông vận tải'),
+    CategoryItem(11584, 'Xây dựng'),
+    CategoryItem(11585, 'Nông, lâm nghiệp, chăn nuôi, đánh cá'),
+    CategoryItem(11586, 'Bộ đội biên phòng'),
+    CategoryItem(11587, 'Công nhân xây dựng'),
+    CategoryItem(11588, 'Làm rẫy'),
+    CategoryItem(11589, 'Kiểm lâm'),
+    CategoryItem(11590, 'Làm thuê theo mùa'),
+    CategoryItem(11591, 'Người đi rừng'),
+    CategoryItem(11592, 'Công nghiệp, tiểu thủ công nghiệp'),
+    CategoryItem(11593, 'Khác'),
   ];
 
   // ── DanToc ───────────────────────────────────────────────────────────────
@@ -129,13 +170,11 @@ class CategoryOptions {
 
   // ── LoaiXetNghiem ─────────────────────────────────────────────────────────
   static const List<CategoryItem> loaiXetNghiem = [
-    CategoryItem(11548, 'Máu'),
-    CategoryItem(11549, 'Phân'),
-    CategoryItem(11550, 'Dịch ngoáy họng'),
-    CategoryItem(11551, 'Dịch tỵ hầu'),
-    CategoryItem(11552, 'Dịch sang thương da'),
-    CategoryItem(11553, 'Dịch não tủy'),
-    CategoryItem(11554, 'Nước tiểu'),
+    CategoryItem(11192, 'Test nhanh'),
+    CategoryItem(11193, 'Mac-elisa'),
+    CategoryItem(11194, 'PCR'),
+    CategoryItem(11195, 'Soi'),
+    CategoryItem(11555, 'Cấy'),
   ];
 
   // ── KetQuaXetNghiem ───────────────────────────────────────────────────────

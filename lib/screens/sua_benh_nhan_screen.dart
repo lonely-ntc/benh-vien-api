@@ -27,8 +27,8 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
   late final TextEditingController _donViDieuTraCtrl;
 
   // ── Dropdown values ──────────────────────────────────────────────────────
-  CategoryItem? _gioiTinh, _danToc;
-  String? _ngheNghiep, _nhomMau;
+  CategoryItem? _gioiTinh, _danToc, _ngheNghiep;
+  String? _nhomMau;
   CategoryItem? _tinh;
   CategoryItem? _benhNen, _benhTruyenNhiem, _tinhTrangTiemChung, _coKhong;
   CategoryItem? _dieuTri, _hinhThucDieuTri, _chanDoanBenh;
@@ -51,7 +51,7 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
 
     _gioiTinh           = bn.gioiTinhItem;
     _danToc             = bn.danTocItem;
-    _ngheNghiep         = bn.ngheNghiep;
+    _ngheNghiep         = bn.ngheNghiepItem;
     _nhomMau            = bn.nhomMau;
     _tinh               = bn.tinhItem;
     _benhNen            = bn.benhNenKemTheoItem;          // Fix: dùng benhNenKemTheoItem
@@ -127,7 +127,7 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
         ngaySinh: _ngaySinhCtrl.text.isNotEmpty ? _ngaySinhCtrl.text : null,
         gioiTinhItem: _gioiTinh,
         danTocItem: _danToc,
-        ngheNghiep: _ngheNghiep,
+        ngheNghiepItem: _ngheNghiep,
         soDienThoai: _soDienThoaiCtrl.text.isNotEmpty ? _soDienThoaiCtrl.text : null,
         cccd: _cccdCtrl.text.isNotEmpty ? _cccdCtrl.text : null,
         baoHiemYTe: _baoHiemYTeCtrl.text.isNotEmpty ? _baoHiemYTeCtrl.text : null,
@@ -216,7 +216,7 @@ class _SuaBenhNhanScreenState extends State<SuaBenhNhanScreen> {
               _dateTf(_ngaySinhCtrl, 'Ngày sinh', Icons.cake_outlined),
               _dd('Giới tính', Icons.wc_outlined, _gioiTinh, CategoryOptions.gioiTinh, (v) => setState(() => _gioiTinh = v)),
               _dd('Dân tộc', Icons.people_outline, _danToc, CategoryOptions.danToc, (v) => setState(() => _danToc = v)),
-              _ddStr('Nghề nghiệp', Icons.work_outline, _ngheNghiep, CategoryOptions.ngheNghiep, (v) => setState(() => _ngheNghiep = v)),
+              _dd('Nghề nghiệp', Icons.work_outline, _ngheNghiep, CategoryOptions.ngheNghiep, (v) => setState(() => _ngheNghiep = v)),
               _tf(_soDienThoaiCtrl, 'Số điện thoại', Icons.phone_outlined, type: TextInputType.phone),
               _tf(_cccdCtrl, 'CCCD / CMND', Icons.credit_card_outlined,
                   type: TextInputType.number,

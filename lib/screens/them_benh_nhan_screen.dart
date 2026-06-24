@@ -35,7 +35,7 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
   // ── Dropdown values ────────────────────────────────────────────────────
   CategoryItem? _gioiTinh;
   CategoryItem? _danToc;
-  String? _ngheNghiep;
+  CategoryItem? _ngheNghiep;
   String? _nhomMau;
   CategoryItem? _tinh;
   CategoryItem? _benhNen;
@@ -197,7 +197,7 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
         ngaySinh: _ngaySinhCtrl.text.isNotEmpty ? _ngaySinhCtrl.text : null,
         gioiTinhItem: _gioiTinh,
         danTocItem: _danToc,
-        ngheNghiep: _ngheNghiep,
+        ngheNghiepItem: _ngheNghiep,
         soDienThoai: _soDienThoaiCtrl.text.isNotEmpty ? _soDienThoaiCtrl.text : null,
         cccd: _cccdCtrl.text.isNotEmpty ? _cccdCtrl.text : null,
         baoHiemYTe: _baoHiemYTeCtrl.text.isNotEmpty ? _baoHiemYTeCtrl.text : null,
@@ -466,7 +466,7 @@ class _ThemBenhNhanScreenState extends State<ThemBenhNhanScreen> {
                   items: CategoryOptions.danToc,
                   onChanged: (v) => setState(() => _danToc = v),
                 ),
-                _buildDropdownStr(
+                _buildDropdown(
                   label: 'Nghề nghiệp',
                   icon: Icons.work_outline,
                   value: _ngheNghiep,
