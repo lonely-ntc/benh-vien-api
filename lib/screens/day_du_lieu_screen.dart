@@ -18,10 +18,10 @@ import '../services/api_push_service.dart';
 // const String _apiBaseUrl = 'http://localhost:3000';
 
 // 3. Physical Device - IP máy tính của bạn
-const String _apiBaseUrl = 'http://192.168.1.170:3000';
+// const String _apiBaseUrl = 'http://192.168.1.170:3000';
 
-// 4. Production (uncomment khi deploy)
-// const String _apiBaseUrl = 'https://benh-vien-api.onrender.com';
+// 4. Production (đang sử dụng Render)
+const String _apiBaseUrl = 'https://benh-vien-api.onrender.com';
 
 // ═══════════════════════════════════════════════════════════════════════════
 
